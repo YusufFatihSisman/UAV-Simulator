@@ -16,7 +16,8 @@ enum Camera_Movement {
 // Default camera values
 const float YAW         = -90.0f;
 const float PITCH       =  0.0f;
-const float SPEED       =  2.5f;
+//const float SPEED       =  2.5f;
+const float SPEED       =  5.0f;
 const float SENSITIVITY =  0.1f;
 const float ZOOM        =  45.0f;
 
@@ -44,18 +45,21 @@ public:
     {
         Position = position;
         WorldUp = up;
+        Up = up;
         Yaw = yaw;
         Pitch = pitch;
-        updateCameraVectors();
+        Right = glm::normalize(glm::cross(Front, Up));
     }
     // constructor with scalar values
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = glm::vec3(posX, posY, posZ);
         WorldUp = glm::vec3(upX, upY, upZ);
+        Up = glm::vec3(upX, upY, upZ);
         Yaw = yaw;
         Pitch = pitch;
-        updateCameraVectors();
+        Right = glm::normalize(glm::cross(Front, Up));
+        //updateCameraVectors();
     }
 
     // returns the view matrix calculated using Euler Angles and the LookAt Matrix
@@ -114,6 +118,41 @@ private:
     // calculates the front vector from the Camera's (updated) Euler Angles
     void updateCameraVectors()
     {
+
+        //R = [cos(a/2), sin(a/2)*x, sin(a/2)*y, sin(a/2)*z]
+        float cosX = cos(glm::radians(Pitch/2));
+        float sinX = sin(glm::radians(Pitch/2));
+
+        float cosY = cos(glm::radians(Yaw/2));
+        float sinY = sin(glm::radians(Yaw/2));
+        
+
+        //glm::quat qX = glm::quat(cosX, Right.x * sinX, Right.y * sinX, Right.z * sinX);
+        //glm::quat qY = glm::quat(cosY, Up.x * sinY, -Up.y * sinY, Up.z * sinY);
+
+        glm::quat qX = glm::quat(cosX, sinX, 0, 0);
+        glm::quat qY = glm::quat(cosY, 0, -sinY, 0);
+
+        //glm::quat qCombined = qY * qX;
+        glm::quat qCombined = qY * qX;
+        qCombined = glm::normalize(qCombined);
+
+        glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+
+        glm::vec3 u = glm::vec3(qCombined.x, qCombined.y, qCombined.z);
+        float s = qCombined.w;
+
+
+        glm::vec3 result = qCombined * front;
+        //glm::vec3 result = 2.0f * glm::dot(u, front) * u + (s*s - glm::dot(u, u)) * front + 2.0f * s * glm::cross(u, front);
+
+
+        Front = glm::normalize(result); 
+        //std::cout << Front.x << " " << Front.y << " " << Front.z << "\n";
+        Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+        Up    = glm::normalize(glm::cross(Right, Front));
+
+        /*
         // calculate the new Front vector
         glm::vec3 front;
         front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
@@ -123,6 +162,7 @@ private:
         // also re-calculate the Right and Up vector
         Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         Up    = glm::normalize(glm::cross(Right, Front));
+        */
     }
 };
 #endif
