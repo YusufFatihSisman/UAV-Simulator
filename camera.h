@@ -10,12 +10,20 @@ enum Camera_Movement {
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    ROLL_LEFT,
+    ROLL_RIGHT,
+    YAW_LEFT,
+    YAW_RIGHT,
+    PITCH_UP,
+    PITCH_DOWN,
 };
 
 // Default camera values
-const float YAW         = -90.0f;
+//const float YAW         = -90.0f;
+const float YAW         = -1.0f;
 const float PITCH       =  0.0f;
+const float ROLL        = 0.0f;
 //const float SPEED       =  2.5f;
 const float SPEED       =  5.0f;
 const float SENSITIVITY =  0.1f;
@@ -35,31 +43,35 @@ public:
     // euler Angles
     float Yaw;
     float Pitch;
+    float Roll;
     // camera options
     float MovementSpeed;
     float MouseSensitivity;
     float Zoom;
 
     // constructor with vectors
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH, float roll = ROLL) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = position;
         WorldUp = up;
         Up = up;
         Yaw = yaw;
         Pitch = pitch;
-        Right = glm::normalize(glm::cross(Front, Up));
+        Roll = roll;
+        Right = glm::normalize(glm::cross(Front, WorldUp));
+        updateCameraVectors();
     }
     // constructor with scalar values
-    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch, float roll) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = glm::vec3(posX, posY, posZ);
         WorldUp = glm::vec3(upX, upY, upZ);
         Up = glm::vec3(upX, upY, upZ);
         Yaw = yaw;
         Pitch = pitch;
-        Right = glm::normalize(glm::cross(Front, Up));
-        //updateCameraVectors();
+        Roll = roll;
+        Right = glm::normalize(glm::cross(Front, WorldUp));
+        updateCameraVectors();
     }
 
     // returns the view matrix calculated using Euler Angles and the LookAt Matrix
@@ -72,6 +84,9 @@ public:
     void ProcessKeyboard(Camera_Movement direction, float deltaTime)
     {
         float velocity = MovementSpeed * deltaTime;
+        //float rollVelocity = 50 * deltaTime;
+        float rollVelocity = 50 * deltaTime;
+
         if (direction == FORWARD)
             Position += Front * velocity;
         if (direction == BACKWARD)
@@ -80,6 +95,23 @@ public:
             Position -= Right * velocity;
         if (direction == RIGHT)
             Position += Right * velocity;
+
+        if (direction == ROLL_LEFT)
+            Roll += rollVelocity;
+        if (direction == ROLL_RIGHT)
+            Roll -= rollVelocity;
+
+        if (direction == YAW_LEFT)
+            Yaw += rollVelocity;
+        if (direction == YAW_RIGHT)
+            Yaw -= rollVelocity;
+
+        if (direction == PITCH_DOWN)
+            Pitch -= rollVelocity;
+        if (direction == PITCH_UP)
+            Pitch += rollVelocity;
+
+        updateCameraVectors();
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -104,6 +136,7 @@ public:
         updateCameraVectors();
     }
 
+
     // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(float yoffset)
     {
@@ -126,43 +159,55 @@ private:
         float cosY = cos(glm::radians(Yaw/2));
         float sinY = sin(glm::radians(Yaw/2));
         
+        float cosZ = cos(glm::radians(Roll/2));
+        float sinZ = sin(glm::radians(Roll/2));
 
-        //glm::quat qX = glm::quat(cosX, Right.x * sinX, Right.y * sinX, Right.z * sinX);
-        //glm::quat qY = glm::quat(cosY, Up.x * sinY, -Up.y * sinY, Up.z * sinY);
+        //glm::quat qX = glm::quat(cosX, sinX, 0, 0);
+        //glm::quat qY = glm::quat(cosY, 0, sinY, 0);
+        //glm::quat qZ = glm::quat(cosZ, 0, 0, sinZ);
 
-        glm::quat qX = glm::quat(cosX, sinX, 0, 0);
-        glm::quat qY = glm::quat(cosY, 0, -sinY, 0);
 
-        //glm::quat qCombined = qY * qX;
-        glm::quat qCombined = qY * qX;
+        glm::quat qX = glm::quat(cosX, Right.x * sinX, Right.y * sinX, Right.z * sinX);
+        glm::quat qY = glm::quat(cosY, Up.x * sinY, Up.y * sinY, Up.z * sinY);
+        glm::quat qZ = glm::quat(cosZ, Front.x * sinZ, Front.y * sinZ, Front.z * sinZ);
+
+
+        glm::quat qCombined = qZ * qY * qX;
+        //glm::quat qCombined = qY * qX * qZ;
         qCombined = glm::normalize(qCombined);
 
-        glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+        //glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+        //glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
+        //glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        glm::vec3 u = glm::vec3(qCombined.x, qCombined.y, qCombined.z);
-        float s = qCombined.w;
+        //front = qCombined * front;
+        //right = qCombined * right;
+        //up = qCombined * up;
 
+        //Front = glm::normalize(front); 
+        //Right = glm::normalize(right);
+        //Up = glm::normalize(up);
 
-        glm::vec3 result = qCombined * front;
-        //glm::vec3 result = 2.0f * glm::dot(u, front) * u + (s*s - glm::dot(u, u)) * front + 2.0f * s * glm::cross(u, front);
+        Front = glm::normalize(qCombined * Front);
+        Right = glm::normalize(qCombined * Right);
+        //Right = glm::normalize(glm::cross(Front, WorldUp));
+        Up    = glm::normalize(glm::cross(Right, Front)); 
+        //Up = glm::normalize(qCombined * Up);
 
+        Yaw = 0;
+        Pitch = 0;
+        Roll = 0;
 
-        Front = glm::normalize(result); 
+        std::cout << "DIRECTIONS\n" << "Front: ";
+        std::cout << Front.x << " " << Front.y << " " << Front.z << "\n";
+        std::cout << "Up: ";
+        std::cout << Up.x << " " << Up.y << " " << Up.z << "\n"; 
+         std::cout << "Right: ";
+        std::cout << Right.x << " " << Right.y << " " << Right.z << "\n"; 
+        std::cout << "----------------\n";
         //std::cout << Front.x << " " << Front.y << " " << Front.z << "\n";
-        Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-        Up    = glm::normalize(glm::cross(Right, Front));
-
-        /*
-        // calculate the new Front vector
-        glm::vec3 front;
-        front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-        front.y = sin(glm::radians(Pitch));
-        front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-        Front = glm::normalize(front);
-        // also re-calculate the Right and Up vector
-        Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-        Up    = glm::normalize(glm::cross(Right, Front));
-        */
+        //Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+        //Up    = glm::normalize(glm::cross(Right, Front));  
     }
 };
 #endif
