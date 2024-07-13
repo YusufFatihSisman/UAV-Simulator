@@ -20,6 +20,13 @@ class CustomShader : public Shader{
             this->setFloat((s + "linear").c_str(), linear);
             this->setFloat((s + "quadratic").c_str(), quadratic);
         }
+
+        void setDirectionLight(const glm::vec3 &direction, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular){
+            this->setVec3("dirLight.direction", direction);
+            this->setVec3("dirLight.ambient", ambient);
+            this->setVec3("dirLight.diffuse", diffuse);
+            this->setVec3("dirLight.specular", specular);
+        }
 };
 
 #endif

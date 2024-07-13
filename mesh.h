@@ -36,7 +36,19 @@ class Mesh{
             setupMesh();
         }
 
+        /*Mesh(const Mesh& mesh){
+            this->vertices = mesh.vertices;
+            this->indices = mesh.indices;
+            this->textures = mesh.textures;
+        }
+
         ~Mesh(){
+            glDeleteVertexArrays(1, &VAO);
+            glDeleteBuffers(1, &VBO);
+            glDeleteBuffers(1, &EBO);
+        }*/
+
+        void Free(){
             glDeleteVertexArrays(1, &VAO);
             glDeleteBuffers(1, &VBO);
             glDeleteBuffers(1, &EBO);

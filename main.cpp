@@ -11,12 +11,13 @@
 
 #include "customShader.h"
 #include "camera.h"
-#include "mesh.h"
+//#include "mesh.h"
+#include "gameObject.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, GameObject &player);
 unsigned int loadTexture(const char *path);
 
 const unsigned int SCR_WIDTH = 800;
@@ -137,6 +138,30 @@ int main(){
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
 
+    // left bot --- right bot --- top right --- top left
+    float objectVertices[] = {
+        -0.5f, 0.0f, 0.5f,  -1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  // left forward
+         0.0f, 0.5f, 0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  0.0f,   // mid top
+         0.0f, 0.0f, -1.0f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,   // mid backward
+         0.5f, 0.0f, 0.5f,  1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  // right forward
+    };
+
+    vector<Vertex> objectVertexVector;
+    vector<unsigned int> objectIndiceVector;
+    for(int i = 0; i < sizeof(objectVertices)/sizeof(float); i+=8){
+        Vertex v;
+        v.Position = glm::vec3(objectVertices[i], objectVertices[i+1], objectVertices[i+2]);
+        v.Normal = glm::vec3(objectVertices[i+3], objectVertices[i+4], objectVertices[i+5]);
+        v.TexCoords = glm::vec2(objectVertices[i+6], objectVertices[i+7]);
+        objectVertexVector.push_back(v);
+    }
+    objectIndiceVector.push_back(0);
+    objectIndiceVector.push_back(1);
+    objectIndiceVector.push_back(2);
+
+    objectIndiceVector.push_back(3);
+    objectIndiceVector.push_back(1);
+    objectIndiceVector.push_back(2);
 
     vector<Vertex> verticeVector;
     vector<unsigned int> indiceVector;
@@ -156,8 +181,7 @@ int main(){
     unsigned int diffuseMap = loadTexture("container.png");
     unsigned int specularMap = loadTexture("container_specular.png");
 
-    Texture t0;
-    Texture t1;
+    Texture t0, t1;
     t0.id = diffuseMap;
     t0.type = "diffuse";
     t1.id = specularMap;
@@ -167,7 +191,16 @@ int main(){
     textureVector.push_back(t0);
     textureVector.push_back(t1);
 
-    Mesh mesh = Mesh(verticeVector, indiceVector, textureVector);
+    vector<GameObject> gameObjects;
+    Mesh mesh(verticeVector, indiceVector, textureVector);
+
+    Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
+    GameObject player(mesh2);
+
+
+    for(int i = 0; i < 10; i++){
+        gameObjects.push_back(GameObject(mesh, cubePositions[i]));
+    }
 
     ourShader.use();
 
@@ -177,7 +210,7 @@ int main(){
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        processInput(window);
+        processInput(window, player);
 
         //render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -188,19 +221,11 @@ int main(){
         ourShader.setVec3("viewPos", camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
 
-        
-        // directional light
-        ourShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        ourShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-        ourShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-        ourShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        // point light 1
+        // Lights
+        ourShader.setDirectionLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.4f, 0.4f, 0.4f), glm::vec3(0.5f, 0.5f, 0.5f));
         ourShader.setPointLight(0, pointLightPositions[0], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
-        // point light 2
         ourShader.setPointLight(1, pointLightPositions[1], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
-        // point light 3
         ourShader.setPointLight(2, pointLightPositions[2], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
-        // point light 4
         ourShader.setPointLight(3, pointLightPositions[3], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);   
 
         // view/projection transformations
@@ -217,13 +242,23 @@ int main(){
         {
             // calculate the model matrix for each object and pass it to shader before drawing
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
+            model = glm::translate(model, gameObjects[i].position);
             float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            if(i == 0){
+                model = model * glm::lookAt(gameObjects[i].position, gameObjects[i].position + camera.Front, camera.Up);
+            }else{
+                model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            }
             ourShader.setMat4("model", model);
 
-            mesh.Draw(ourShader);
+            //mesh.Draw(ourShader);
+            //gameObjects[i].Draw(ourShader);
         }
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, player.position);
+        model = model * player.getRotationMatrix();
+        ourShader.setMat4("model", model);
+        player.Draw(ourShader);
 
         lightShader.use();
         lightShader.setMat4("projection", projection);
@@ -245,8 +280,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }  
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, GameObject &player)
 {
+    bool q = false, e = false, right = false, left = false, up = false, down = false;
+    
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -257,21 +294,38 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
         camera.ProcessKeyboard(ROLL_LEFT, deltaTime);
+        q = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
         camera.ProcessKeyboard(ROLL_RIGHT, deltaTime);
-
+        e = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    {
         camera.ProcessKeyboard(YAW_RIGHT, deltaTime);
+        right = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    {
         camera.ProcessKeyboard(YAW_LEFT, deltaTime);
+        left = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
         camera.ProcessKeyboard(PITCH_UP, deltaTime);
+        up = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
         camera.ProcessKeyboard(PITCH_DOWN, deltaTime);
-    
-
+        down = true;
+    }
+    player.processInput(q, e, right, left, up, down, deltaTime);
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
