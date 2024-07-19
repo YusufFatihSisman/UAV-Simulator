@@ -96,9 +96,9 @@ public:
             Position += Right * velocity;
 
         if (direction == ROLL_LEFT)
-            Roll += rollVelocity;
-        if (direction == ROLL_RIGHT)
             Roll -= rollVelocity;
+        if (direction == ROLL_RIGHT)
+            Roll += rollVelocity;
 
         if (direction == YAW_LEFT)
             Yaw += rollVelocity;

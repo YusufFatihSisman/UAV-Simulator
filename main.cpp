@@ -13,11 +13,12 @@
 #include "camera.h"
 //#include "mesh.h"
 #include "gameObject.h"
+#include "uav.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window, GameObject &player);
+void processInput(GLFWwindow *window, Uav &player);
 unsigned int loadTexture(const char *path);
 
 const unsigned int SCR_WIDTH = 800;
@@ -195,7 +196,7 @@ int main(){
     Mesh mesh(verticeVector, indiceVector, textureVector);
 
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
-    GameObject player(mesh2);
+    Uav player(mesh2);
 
 
     for(int i = 0; i < 10; i++){
@@ -236,29 +237,33 @@ int main(){
 
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
-        ourShader.setMat4("model", model);
+        //ourShader.setMat4("model", model);
         
-        for (unsigned int i = 0; i < 10; i++)
+        for (unsigned int i = 1; i < 10; i++)
         {
             // calculate the model matrix for each object and pass it to shader before drawing
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, gameObjects[i].position);
             float angle = 20.0f * i;
-            if(i == 0){
-                model = model * glm::lookAt(gameObjects[i].position, gameObjects[i].position + camera.Front, camera.Up);
-            }else{
-                model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            }
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             ourShader.setMat4("model", model);
 
             //mesh.Draw(ourShader);
-            //gameObjects[i].Draw(ourShader);
+            gameObjects[i].Draw(ourShader);
         }
+    
         model = glm::mat4(1.0f);
         model = glm::translate(model, player.position);
         model = model * player.getRotationMatrix();
         ourShader.setMat4("model", model);
         player.Draw(ourShader);
+
+        /*model = glm::mat4(1.0f);
+        model = glm::translate(model, player.position);
+        model = model * player.getRotationMatrix();
+        ourShader.setMat4("model", model);
+        gameObjects[0].Draw(ourShader);*/
+
 
         lightShader.use();
         lightShader.setMat4("projection", projection);
@@ -280,9 +285,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }  
 
-void processInput(GLFWwindow *window, GameObject &player)
+void processInput(GLFWwindow *window, Uav &player)
 {
-    bool q = false, e = false, right = false, left = false, up = false, down = false;
+    bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false;
     
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -325,7 +330,15 @@ void processInput(GLFWwindow *window, GameObject &player)
         camera.ProcessKeyboard(PITCH_DOWN, deltaTime);
         down = true;
     }
-    player.processInput(q, e, right, left, up, down, deltaTime);
+
+    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
+        speedUp = true;
+    }
+    if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS){
+        slowDown = true;
+    }
+
+    player.processInput(q, e, right, left, up, down, speedUp, slowDown, deltaTime);
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)

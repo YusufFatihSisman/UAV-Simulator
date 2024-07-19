@@ -15,7 +15,6 @@ out vec3 FragPos;
 void main()
 {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
-    //vertexColor = aColor;
     FragPos = vec3(model * vec4(aPos, 1.0));
     TexCoords = aTexCoord;
     Normal = mat3(transpose(inverse(model))) * aNormal;
