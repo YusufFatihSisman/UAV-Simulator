@@ -32,6 +32,8 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+bool lockHold = false;
+
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 int main(){
@@ -287,7 +289,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void processInput(GLFWwindow *window, Uav &player)
 {
-    bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false;
+    bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false, speedLock = false;
     
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -337,8 +339,15 @@ void processInput(GLFWwindow *window, Uav &player)
     if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS){
         slowDown = true;
     }
+    if(!lockHold && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
+        speedLock = true;
+        lockHold = true;
+    }
+    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE){
+        lockHold = false;
+    }
 
-    player.processInput(q, e, right, left, up, down, speedUp, slowDown, deltaTime);
+    player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
