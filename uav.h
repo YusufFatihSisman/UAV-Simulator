@@ -11,32 +11,41 @@ class Uav : public GameObject, protected Rigidbody{
         using GameObject::position;
 
         int forceLimit = 50;
-        float speedRate = 2;
-        float slowRate = 20;
+        float speedRate = 50;
+        float slowRate = 50;
 
-        Uav(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f),
-        float m = 1, glm::vec3 currentVelocity = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 currentForce = glm::vec3(0.0f, 0.0f, 0.0f)
-        ) : GameObject(mesh, position, up, front), Rigidbody(position, up, front, m, currentVelocity, currentForce){}
+        Uav(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), float m = 1
+        ) : GameObject(mesh, position, up, front), Rigidbody(position, up, front, m){}
 
         void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime);
+
+        void printInfo(){
+            std::cout << "Drag: " << getDrag() << "\n";
+            std::cout << "Thrust: " << thrustForce << "\n";
+            std::cout << "Lift: " << getLift() << "\n";
+            std::cout << "Weight: " << getWeight() << "\n";
+            std::cout << "Velocity: " << vVelocity << "\n";
+            std::cout << "Horizontal Velocity: " << hVelocity << "\n";
+            std::cout << "Position: " << GameObject::position.x << " " << GameObject::position.y <<  " " << GameObject::position.z  << "\n";
+        }
 
     private:
         bool stable = false;
         float thrustForce = 0;
 
         inline float getLift(){
-            return liftCoefficient * airDensity * (pow(veloctiy, 2) / 2) * wingArea;
+            return liftCoefficient * airDensity * (pow(vVelocity, 2) / 2) * wingArea;
         }
 
         inline float getDrag(){
-            return dragCoefficient * airDensity * (pow(veloctiy, 2) / 2) * referenceArea;
+            return dragCoefficient * airDensity * (pow(vVelocity, 2) / 2) * referenceArea;
         }
 
-        float liftCoefficient = 0.4;
+        float liftCoefficient = 0.001;
         float airDensity = 0.2;
         float wingArea = 20;
 
-        float dragCoefficient = 0.4;
+        float dragCoefficient = 0.2;
         float referenceArea = 25;
 
 };
@@ -87,20 +96,22 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
     
     newForce += getLift() * GameObject::up;
     // weight
-    newForce += getLift() * -GameObject::up;
+    newForce += getWeight() * -GameObject::up;
 
     newForce += getDrag() * -GameObject::front;
-    std::cout << "Drag: " << glm::length(getDrag()) << "\n";
+    //std::cout << "Drag: " << glm::length(getDrag()) << "\n";
 
     if(stable){
         thrustForce = getDrag();
+        std::cout << "Lock\n";
     }
+    //std::cout << "Thrust: " << thrustForce << "\n";
     newForce += thrustForce * GameObject::front;
     setForce(newForce);
 
     //std::cout << "Velocity: " << glm::length(currentVelocity) << "\n";
-    std::cout << "Velocity: " << veloctiy << "\n";
-
+    //std::cout << "Velocity: " << vVelocity << "\n";
+    //std::cout << "Horizontal Velocity: " << hVelocity << "\n";
     update(deltaTime);
     //if(glm::dot(glm::normalize(Rigidbody::front), glm::normalize(currentVelocity)) < 0)
     //    currentVelocity = glm::vec3(0,0,0);

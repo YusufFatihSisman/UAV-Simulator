@@ -207,6 +207,8 @@ int main(){
 
     ourShader.use();
 
+    float timer = glfwGetTime();
+
     while(!glfwWindowShouldClose(window))
     {
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -214,6 +216,9 @@ int main(){
         lastFrame = currentFrame;
 
         processInput(window, player);
+        camera.Position.x = player.position.x;
+        camera.Position.y = player.position.y;
+        camera.Position.z = player.position.z + 3;
 
         //render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -266,6 +271,10 @@ int main(){
         ourShader.setMat4("model", model);
         gameObjects[0].Draw(ourShader);*/
 
+        if(glfwGetTime() - timer > 1){
+            timer = glfwGetTime();
+            player.printInfo();
+        }
 
         lightShader.use();
         lightShader.setMat4("projection", projection);

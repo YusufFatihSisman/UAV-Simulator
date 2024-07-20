@@ -11,24 +11,30 @@ class Rigidbody{
         glm::vec3 right;
 
         float m;
-        float veloctiy = 0;
+        float hVelocity = 0;
+        float vVelocity = 0;
         glm::vec3 currentVelocity;
         glm::vec3 currentForce;
 
-        Rigidbody(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f),
-        float m = 1,  glm::vec3 currentVelocity = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 currentForce = glm::vec3(0.0f, 0.0f, 0.0f)){
+        Rigidbody(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), float m = 1){
             this->position = position;
             this->up = up;
             this->front = front;
             this->m = m;
-            this->currentVelocity = currentVelocity;
-            this->currentForce = currentForce;
+            this->currentVelocity =glm::vec3(0.0f, 0.0f, 0.0f);
+            this->currentForce = glm::vec3(0.0f, 0.0f, 0.0f);
             right = glm::normalize(glm::cross(front, up));
         }
         void rotateForces(glm::quat quaternion);
         inline void setForce(glm::vec3 force);
         inline void addForce(glm::vec3 force);
         void update(float deltaTime, bool directionBased);
+
+        inline float getWeight(){
+            return  m * gForce;
+        }
+    private:
+        const float gForce = 9.8f;
 };
 
 void Rigidbody::rotateForces(glm::quat quaternion){
@@ -59,20 +65,38 @@ void Rigidbody::update(float deltaTime, bool directionBased = true){
     //position += currentVelocity * deltaTime;
     //currentVelocity += a * deltaTime;
 
-    if(directionBased)
-        position += veloctiy * deltaTime * front;
+    
+    if(directionBased){
+        float xRatio = front.x == 0 ? 0 : front.x / (abs(front.x) + abs(front.z));
+        float zRatio = front.z == 0 ? 0 : front.z / (abs(front.x) + abs(front.z));
+        position.x += vVelocity * deltaTime * xRatio;
+        position.z += vVelocity * deltaTime * zRatio;
+        position.y += hVelocity * deltaTime;
+       //// position.z += vVelocity * deltaTime;
+//position.y += hVelocity * deltaTime;
+        //position += vVelocity * deltaTime * front;
+    }
     else {
         position += currentVelocity * deltaTime;
         currentVelocity += a * deltaTime;
     }
 
     if(front.z * currentForce.z > 0)
-        veloctiy += (glm::length(currentForce) / m) * deltaTime;
+        vVelocity += (sqrt(pow(currentForce.x, 2) + pow(currentForce.z, 2)) / m) * deltaTime;
+        //vVelocity += (glm::length(currentForce) / m) * deltaTime;
     else{
-        veloctiy -= (glm::length(currentForce) / m) * deltaTime;
-        if(veloctiy < 0.5f)
-            veloctiy = 0;
+        vVelocity -= (sqrt(pow(currentForce.x, 2) + pow(currentForce.z, 2)) / m) * deltaTime;
+        //vVelocity -= (glm::length(currentForce) / m) * deltaTime;
+        if(vVelocity < 0.5f)
+            vVelocity = 0;
     }
+    
+    hVelocity += (currentForce.y / m) * deltaTime;
+    if(position.y < 0){
+        position.y = 0;
+        hVelocity = 0;
+    }
+    //hVelocity = vVelocity;
         
 
 }
