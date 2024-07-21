@@ -14,6 +14,7 @@
 //#include "mesh.h"
 #include "gameObject.h"
 #include "uav.h"
+#include "collider.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -66,38 +67,85 @@ int main(){
     glEnable(GL_DEPTH_TEST);
     CustomShader ourShader("vertex.GLSL", "fragment.GLSL");
     CustomShader lightShader("lightVertex.GLSL", "lightFragment.GLSL");
+    Shader lineShader("lineVertex.GLSL", "lineFragment.GLSL");
+
+        // left bot --- right bot --- top right --- top left
+    float lineVertices[] = {
+        // arka
+        -0.5f, -0.5f, -0.5f, // left bot back
+         0.5f, -0.5f, -0.5f, // right bot back
+
+         0.5f,  0.5f, -0.5f, // right up back
+        -0.5f,  0.5f, -0.5f, // left up back
+
+        -0.5f, -0.5f, -0.5f, // left bot back
+        -0.5f,  0.5f, -0.5f, // l t b
+
+         0.5f,  0.5f, -0.5f, // r t b
+         0.5f, -0.5f, -0.5f, // r b b
+        // ön
+        -0.5f, -0.5f,  0.5f, // l b f
+         0.5f, -0.5f,  0.5f, // r b f
+
+         0.5f,  0.5f,  0.5f, // r t f
+        -0.5f,  0.5f,  0.5f, // l t f 
+
+        -0.5f,  0.5f,  0.5f, // l t f
+        -0.5f, -0.5f,  0.5f, // l b f
+
+         0.5f,  0.5f,  0.5f, // r t f
+         0.5f, -0.5f,  0.5f, // r b f
+        // sol
+        -0.5f,  0.5f, -0.5f, // l t b
+        -0.5f,  0.5f,  0.5f, // l t f
+
+        -0.5f, -0.5f, -0.5f, // l b b
+        -0.5f, -0.5f,  0.5f, // l b f
+        // sağ
+         0.5f,  0.5f,  0.5f, // r t f
+         0.5f,  0.5f, -0.5f, // r t b
+
+         0.5f, -0.5f, -0.5f, // r b b
+         0.5f, -0.5f,  0.5f, // r b f
+    };
 
     // left bot --- right bot --- top right --- top left
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        // arka
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f, // left bot back
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f, // right bot back
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f, // right up back
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f, // left up back
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        // ön
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f, // left bot front
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f, // right top front
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f, // r t f
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f, // l t f
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        // sol
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f, // l t f
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f, // l t b
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f, // l b b
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f, // l b f
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        // sağ
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f, // r t f
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f, // r t b
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f, // r b b
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f, // r b f
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        // alt
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f, // l b b
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f, // r b b
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f, // r b f
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f, // l b f
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f
+        // üst
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f, // l t b
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f, // r t b
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f, // r t f
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f  // l t f
     };
 
     unsigned int indices[] = {
@@ -200,6 +248,7 @@ int main(){
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
     Uav player(mesh2);
 
+    Collider cd(lineVertices, sizeof(lineVertices)/sizeof(float));
 
     for(int i = 0; i < 10; i++){
         gameObjects.push_back(GameObject(mesh, cubePositions[i]));
@@ -211,6 +260,7 @@ int main(){
 
     while(!glfwWindowShouldClose(window))
     {
+        glEnable(GL_DEPTH_TEST);
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -246,16 +296,14 @@ int main(){
         glm::mat4 model = glm::mat4(1.0f);
         //ourShader.setMat4("model", model);
         
+        
         for (unsigned int i = 1; i < 10; i++)
         {
-            // calculate the model matrix for each object and pass it to shader before drawing
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, gameObjects[i].position);
             float angle = 20.0f * i;
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             ourShader.setMat4("model", model);
-
-            //mesh.Draw(ourShader);
             gameObjects[i].Draw(ourShader);
         }
     
@@ -265,20 +313,17 @@ int main(){
         ourShader.setMat4("model", model);
         player.Draw(ourShader);
 
-        /*model = glm::mat4(1.0f);
-        model = glm::translate(model, player.position);
-        model = model * player.getRotationMatrix();
-        ourShader.setMat4("model", model);
-        gameObjects[0].Draw(ourShader);*/
-
         if(glfwGetTime() - timer > 1){
             timer = glfwGetTime();
             player.printInfo();
         }
 
-        lightShader.use();
-        lightShader.setMat4("projection", projection);
-        lightShader.setMat4("view", view);
+        glDisable(GL_DEPTH_TEST);
+        lineShader.use();
+        lineShader.setMat4("model", model);
+        lineShader.setMat4("projection", projection);
+        lineShader.setMat4("view", view);
+        cd.Draw(lineShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    

@@ -7,8 +7,6 @@ class Rigidbody{
     public:
         glm::vec3 position;
         glm::vec3 front;
-        glm::vec3 up;
-        glm::vec3 right;
 
         float m;
         float hVelocity = 0;
@@ -16,14 +14,12 @@ class Rigidbody{
         glm::vec3 currentVelocity;
         glm::vec3 currentForce;
 
-        Rigidbody(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), float m = 1){
+        Rigidbody(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), float m = 1){
             this->position = position;
-            this->up = up;
             this->front = front;
             this->m = m;
             this->currentVelocity =glm::vec3(0.0f, 0.0f, 0.0f);
             this->currentForce = glm::vec3(0.0f, 0.0f, 0.0f);
-            right = glm::normalize(glm::cross(front, up));
         }
         void rotateForces(glm::quat quaternion);
         inline void setForce(glm::vec3 force);

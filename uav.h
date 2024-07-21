@@ -15,7 +15,7 @@ class Uav : public GameObject, protected Rigidbody{
         float slowRate = 50;
 
         Uav(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), float m = 1
-        ) : GameObject(mesh, position, up, front), Rigidbody(position, up, front, m){}
+        ) : GameObject(mesh, position, up, front), Rigidbody(position, front, m){}
 
         void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime);
 
@@ -45,7 +45,7 @@ class Uav : public GameObject, protected Rigidbody{
         float airDensity = 0.2;
         float wingArea = 20;
 
-        float dragCoefficient = 0.2;
+        float dragCoefficient = 0.02;
         float referenceArea = 25;
 
 };
@@ -69,8 +69,6 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
     if(q || e || right || left || up || down){
         glm::quat quaternion = rotate(xAngle, yAngle, zAngle);
         Rigidbody::front = GameObject::front;
-        Rigidbody::up = GameObject::up;
-        Rigidbody::right = GameObject::right;
         rotateForces(quaternion);
     }
 
@@ -96,7 +94,7 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
     
     newForce += getLift() * GameObject::up;
     // weight
-    newForce += getWeight() * -GameObject::up;
+    newForce += getWeight() * glm::vec3(0.0f, -1.0f, 0.0f);
 
     newForce += getDrag() * -GameObject::front;
     //std::cout << "Drag: " << glm::length(getDrag()) << "\n";
