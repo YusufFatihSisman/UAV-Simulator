@@ -69,7 +69,6 @@ int main(){
     CustomShader lightShader("lightVertex.GLSL", "lightFragment.GLSL");
     Shader lineShader("lineVertex.GLSL", "lineFragment.GLSL");
 
-        // left bot --- right bot --- top right --- top left
     float lineVertices[] = {
         // arka
         -0.5f, -0.5f, -0.5f, // left bot back
@@ -248,7 +247,10 @@ int main(){
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
     Uav player(mesh2);
 
-    Collider cd(lineVertices, sizeof(lineVertices)/sizeof(float));
+    Collider playerCd(objectVertices, sizeof(objectVertices)/sizeof(float));
+
+    Collider objectCd(vertices, sizeof(vertices)/sizeof(float));
+
 
     for(int i = 0; i < 10; i++){
         gameObjects.push_back(GameObject(mesh, cubePositions[i]));
@@ -296,7 +298,6 @@ int main(){
         glm::mat4 model = glm::mat4(1.0f);
         //ourShader.setMat4("model", model);
         
-        
         for (unsigned int i = 1; i < 10; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
@@ -306,7 +307,7 @@ int main(){
             ourShader.setMat4("model", model);
             gameObjects[i].Draw(ourShader);
         }
-    
+
         model = glm::mat4(1.0f);
         model = glm::translate(model, player.position);
         model = model * player.getRotationMatrix();
@@ -315,15 +316,34 @@ int main(){
 
         if(glfwGetTime() - timer > 1){
             timer = glfwGetTime();
-            player.printInfo();
+            //player.printInfo();
         }
 
         glDisable(GL_DEPTH_TEST);
         lineShader.use();
+        model = glm::translate(model, playerCd.offset);
+        model = glm::scale(model, playerCd.scale);
+
         lineShader.setMat4("model", model);
         lineShader.setMat4("projection", projection);
         lineShader.setMat4("view", view);
-        cd.Draw(lineShader);
+        playerCd.Draw(lineShader);
+
+        for (unsigned int i = 1; i < 10; i++)
+        {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, gameObjects[i].position);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            model = glm::translate(model, objectCd.offset);
+            model = glm::scale(model, objectCd.scale);
+
+            lineShader.setMat4("model", model);
+            lineShader.setMat4("projection", projection);
+            lineShader.setMat4("view", view);
+            
+            objectCd.Draw(ourShader);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
