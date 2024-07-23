@@ -239,6 +239,10 @@ int main(){
         //camera.Position.y = player.position.y;
         //camera.Position.z = player.position.z + 3;
 
+        /*camera.Position.x = colTest.position.x;
+        camera.Position.y = colTest.position.y;
+        camera.Position.z = colTest.position.z + 3;*/
+
         //render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -269,7 +273,6 @@ int main(){
 
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
-        //ourShader.setMat4("model", model);
         
         for (unsigned int i = 1; i < 10; i++)
         {
@@ -278,14 +281,9 @@ int main(){
             float angle = 20.0f * i;
             if(first){
                 gameObjects[i].rotate(angle, angle*0.3f, angle*0.5f);
-                objectColliders[i].position = gameObjects[i].position;
-                objectColliders[i].front = gameObjects[i].front;
-                objectColliders[i].right = gameObjects[i].right;
-                objectColliders[i].up = gameObjects[i].up;
-                
+                objectColliders[i].set(gameObjects[i].position, gameObjects[i].front, gameObjects[i].up, gameObjects[i].right);
                 objectColliders[i].update(gameObjects[i].orientation);
             }
-            //model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             model = model * gameObjects[i].getRotationMatrix();
             ourShader.setMat4("model", model);
             gameObjects[i].draw(ourShader);
@@ -307,7 +305,7 @@ int main(){
         lineShader.setMat4("projection", projection);
         lineShader.setMat4("view", view);
         colTest.Collider::draw(lineShader);
-
+        
 
         // PLAYER SETTINGS
         /*
@@ -323,6 +321,8 @@ int main(){
         }
 
         glDisable(GL_DEPTH_TEST);
+        playerCd.set(player.position, player.GameObject::front, player.up, player.right);
+        playerCd.update(player.orientation);
         lineShader.use();
         model = glm::translate(model, playerCd.offset);
         model = glm::scale(model, playerCd.scale);
@@ -346,18 +346,15 @@ int main(){
             objectColliders[i].draw(ourShader);
         }
         
+        /*for(unsigned int i = 1; i < 10; i++){
+            if(playerCd.hit(objectColliders[i])){
+                std::cout << "index: " << i << "\n";
+                std::cout << "Position: " << playerCd.position.x << " " << playerCd.position.y <<  " " << playerCd.position.z  << "\n";
+                std::cout << "Position: " << objectColliders[i].position.x << " " << objectColliders[i].position.y <<  " " << objectColliders[i].position.z  << "\n";
+            }   
+        }*/
 
-        //playerCd.position = player.position;
-        //playerCd.update(player.orientation);
         
-        //for(unsigned int i = 1; i < 10; i++){
-        //    if(playerCd.hit(objectColliders[i])){
-        //        std::cout << "index: " << i << "\n";
-        //        std::cout << "Position: " << playerCd.position.x << " " << playerCd.position.y <<  " " << playerCd.position.z  << "\n";
-        //        std::cout << "Position: " << objectColliders[i].position.x << " " << objectColliders[i].position.y <<  " " << objectColliders[i].position.z  << "\n";
-        //    }   
-        //}
-
         for(unsigned int i = 1; i < 10; i++){
             if(colTest.hit(objectColliders[i])){
                 std::cout << "index: " << i << "\n";
@@ -443,7 +440,7 @@ void processInput(GLFWwindow *window, Uav &player, ColliderTest &colTest)
         lockHold = false;
     }
 
-    //player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
+    player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
     colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime);
 }
 

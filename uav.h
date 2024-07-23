@@ -76,16 +76,11 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
 
     if(speedUp){
         thrustForce += speedRate * deltaTime;
-
-        //addForce(speedRate * deltaTime * GameObject::front);
-        //std::cout << "Force: " << currentForce.x << " " << currentForce.y <<  " " << currentForce.z  << "\n";
     }
     if(slowDown){
         thrustForce -= slowRate * deltaTime;
         if(thrustForce < 0)
             thrustForce = 0;
-        //addForce(slowRate * deltaTime * -GameObject::front);
-        //std::cout << "Force: " << currentForce.x << " " << currentForce.y <<  " " << currentForce.z  << "\n";
     }
 
     if(speedLock){
@@ -93,11 +88,8 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
     }
     
     newForce += getLift() * GameObject::up;
-    // weight
     newForce += getWeight() * glm::vec3(0.0f, -1.0f, 0.0f);
-
     newForce += getDrag() * -GameObject::front;
-    //std::cout << "Drag: " << glm::length(getDrag()) << "\n";
 
     if(stable){
         thrustForce = getDrag();

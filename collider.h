@@ -73,6 +73,7 @@ class Collider{
         void onHit();
         glm::vec2 getProject(glm::vec3 axis) const;
         void update(glm::quat orientation);
+        void set(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right);
 
     private:
         unsigned int VAO, VBO, EBO;
@@ -83,27 +84,31 @@ class Collider{
 
 };
 
+void Collider::set(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right){
+    this->position = position;
+    this->front = front;
+    this->up = up;
+    this->right = right;
+}
+
 void Collider::update(glm::quat orientation){
 
     for(int i = 0; i < vertices.size(); i += 3){
-        //glm::vec3 vertex = glm::vec3(vertices[i], vertices[i+1], vertices[i+2]);
-
-        glm::vec4 vertex = glm::vec4(vertices[i], vertices[i+1], vertices[i+2], 1.0f);
-        glm::mat4 model = glm::mat4(1.0f);
-        
-        model = glm::translate(model, position);
-        model = model * glm::toMat4(orientation);
-        model = glm::scale(model, scale); 
-        model = glm::translate(model, offset); 
-        vertex = model * vertex;
-
-        /*
+        glm::vec3 vertex = glm::vec3(vertices[i], vertices[i+1], vertices[i+2]);
         vertex = scale * vertex;
         vertex += offset;
         vertex = orientation * vertex;
         vertex += position;
+        
+        /*
+        glm::vec4 vertex = glm::vec4(vertices[i], vertices[i+1], vertices[i+2], 1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, position);
+        model = model * glm::toMat4(orientation);
+        model = glm::translate(model, offset); 
+        model = glm::scale(model, scale); 
+        vertex = model * vertex;
         */
-
         worldVertices[i] = vertex.x;
         worldVertices[i+1] = vertex.y;
         worldVertices[i+2] = vertex.z;
@@ -144,11 +149,11 @@ bool Collider::hit(const Collider &other){
         if(axes1[i] == other.up)
             exist3 = true;
     }
-    //if(!exist1)
+    if(!exist1)
         axes2.push_back(other.front);
-    //if(!exist2)
+    if(!exist2)
         axes2.push_back(other.right);
-    //if(!exist3)
+    if(!exist3)
         axes2.push_back(other.up);
 
 
@@ -157,7 +162,7 @@ bool Collider::hit(const Collider &other){
             bool exist = false;
             glm::vec3 newAxis = glm::normalize(glm::cross(axes1[i], axes2[j]));
 
-            /*for(int k = 0; k < axes1.size(); k++){
+            for(int k = 0; k < axes1.size(); k++){
                 if(axes1[k] == newAxis){
                     exist = true;
                     break;
@@ -174,7 +179,6 @@ bool Collider::hit(const Collider &other){
             }
             if(exist)
                 continue;
-            */
             if(newAxis.x != 0 && newAxis.y != 0 && newAxis.z != 0)
                 axes1.push_back(newAxis);
         }

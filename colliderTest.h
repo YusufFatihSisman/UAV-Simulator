@@ -33,17 +33,13 @@ void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, 
     if (up)
         yAngle = rollVelocity;
     
-    if(q || e || right || left || up || down){
+    if(q || e || right || left || up || down)
         rotate(xAngle, yAngle, zAngle);
-        Collider::front = GameObject::front;
-        Collider::right = GameObject::right;
-        Collider::up = GameObject::up;
-    }
-
-    if(speedUp){
+    
+    if(speedUp)
         GameObject::position += 5 * deltaTime * GameObject::front;
-        Collider::position = GameObject::position;
-    }
+
+    set(GameObject::position, GameObject::front, GameObject::up, GameObject::right);
 
     update(orientation);
 }
