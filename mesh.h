@@ -36,13 +36,13 @@ class Mesh{
             setupMesh();
         }
 
-        void Free(){
+        void free(){
             glDeleteVertexArrays(1, &VAO);
             glDeleteBuffers(1, &VBO);
             glDeleteBuffers(1, &EBO);
         }
 
-        void Draw(Shader &shader);
+        void draw(Shader &shader);
     private:
         //  render data
         unsigned int VAO, VBO, EBO;
@@ -51,7 +51,7 @@ class Mesh{
 
 };
 
-void Mesh::Draw(Shader &shader){
+void Mesh::draw(Shader &shader){
     unsigned int diffuseNr = 0;
     unsigned int specularNr = 0;
     for(unsigned int i = 0; i < textures.size(); i++)

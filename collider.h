@@ -11,10 +11,16 @@
 
 class Collider{
     public:
-        std::vector<float> vertices;
+        glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 offset = glm::vec3(0.0f, 0.0f, 0.0f);
-        //std::vector<unsigned int> indices;
         glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+        glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+        glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        std::vector<float> vertices;
+        float worldVertices[72];
 
         Collider(float* objectVertices, int size, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)){ 
             float minY, maxY, minX, maxX, minZ, maxZ;
@@ -54,19 +60,144 @@ class Collider{
                 vertices.push_back(lineVertices[i]);
                 vertices.push_back(lineVertices[i + 1]);
                 vertices.push_back(lineVertices[i + 2]);
+
+                worldVertices[i] = lineVertices[i];
+                worldVertices[i+1] = lineVertices[i + 1];
+                worldVertices[i+1] = lineVertices[i + 2];
             }
 
             setupCollider();
         }
-        void Draw(Shader &shader);
+        void draw(Shader &shader);
+        bool hit(const Collider &other);
+        void onHit();
+        glm::vec2 getProject(glm::vec3 axis) const;
+        void update(glm::quat orientation);
 
     private:
         unsigned int VAO, VBO, EBO;
         static const float lineVertices[];
-
+        
         void setupCollider();
+        
 
 };
+
+void Collider::update(glm::quat orientation){
+
+    for(int i = 0; i < vertices.size(); i += 3){
+        //glm::vec3 vertex = glm::vec3(vertices[i], vertices[i+1], vertices[i+2]);
+
+        glm::vec4 vertex = glm::vec4(vertices[i], vertices[i+1], vertices[i+2], 1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
+        
+        model = glm::translate(model, position);
+        model = model * glm::toMat4(orientation);
+        model = glm::scale(model, scale); 
+        model = glm::translate(model, offset); 
+        vertex = model * vertex;
+
+        /*
+        vertex = scale * vertex;
+        vertex += offset;
+        vertex = orientation * vertex;
+        vertex += position;
+        */
+
+        worldVertices[i] = vertex.x;
+        worldVertices[i+1] = vertex.y;
+        worldVertices[i+2] = vertex.z;
+    }
+
+    //std::cout << worldVertices[0] << " " << worldVertices[1] << " " << worldVertices[2] << "\n";
+}
+
+glm::vec2 Collider::getProject(glm::vec3 axis) const{
+    float min = glm::dot(axis, glm::vec3(worldVertices[0], worldVertices[1], worldVertices[2]));
+    float max = glm::dot(axis, glm::vec3(worldVertices[0], worldVertices[1], worldVertices[2]));
+
+    for(int i = 0; i < vertices.size(); i+=3){
+        float p = glm::dot(axis, glm::vec3(worldVertices[i], worldVertices[i+1], worldVertices[i+2]));
+
+        if (p < min) 
+            min = p;
+        else if (p > max) 
+            max = p;
+    }
+    return glm::vec2(min, max);
+}
+
+bool Collider::hit(const Collider &other){
+
+    vector<glm::vec3> axes1;
+    vector<glm::vec3> axes2;
+    axes1.push_back(front);
+    axes1.push_back(right);
+    axes1.push_back(up);
+
+    bool exist1 = false, exist2 = false, exist3 = false;
+    for(int i = 0; i < axes1.size(); i++){
+        if(axes1[i] == other.front)
+            exist1 = true;
+        if(axes1[i] == other.right)
+            exist2 = true;
+        if(axes1[i] == other.up)
+            exist3 = true;
+    }
+    //if(!exist1)
+        axes2.push_back(other.front);
+    //if(!exist2)
+        axes2.push_back(other.right);
+    //if(!exist3)
+        axes2.push_back(other.up);
+
+
+    for(int i = 0; i < 3; i++){
+        for(int j = 0; j < 3; j++){
+            bool exist = false;
+            glm::vec3 newAxis = glm::normalize(glm::cross(axes1[i], axes2[j]));
+
+            /*for(int k = 0; k < axes1.size(); k++){
+                if(axes1[k] == newAxis){
+                    exist = true;
+                    break;
+                }
+            }
+            if(exist)
+                continue;
+
+            for(int k = 0; k < axes2.size(); k++){
+                if(axes2[k] == newAxis){
+                    exist = true;
+                    break;
+                }
+            }
+            if(exist)
+                continue;
+            */
+            if(newAxis.x != 0 && newAxis.y != 0 && newAxis.z != 0)
+                axes1.push_back(newAxis);
+        }
+    }
+
+    for(int i = 0; i < axes1.size(); i++){
+        glm::vec2 line1 = getProject(axes1[i]);
+        glm::vec2 line2 = other.getProject(axes1[i]);
+        if(line1.y < line2.x || line2.y < line1.x)
+            return false;
+    }
+    for(int i = 0; i < axes2.size(); i++){
+        glm::vec2 line1 = getProject(axes2[i]);
+        glm::vec2 line2 = other.getProject(axes2[i]);
+        if(line1.y < line2.x || line2.y < line1.x)
+            return false;
+    }
+    return true;
+}
+
+void onHit(){
+    std::cout << "Hit";
+}
 
 const float Collider::lineVertices[] = {
     // arka
@@ -107,7 +238,7 @@ const float Collider::lineVertices[] = {
     0.5f, -0.5f,  0.5f, // r b f
 };
 
-void Collider::Draw(Shader &shader){
+void Collider::draw(Shader &shader){
     glBindVertexArray(VAO);
     glDrawArrays(GL_LINES, 0, vertices.size());
     glBindVertexArray(0);
