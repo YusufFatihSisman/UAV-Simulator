@@ -137,6 +137,7 @@ int main(){
         glm::vec3( 0.0f,  0.0f, -3.0f)
     };
 
+    /*
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f), 
         glm::vec3( 2.0f,  5.0f, -15.0f), 
@@ -149,6 +150,20 @@ int main(){
         glm::vec3( 1.5f,  0.2f, -1.5f), 
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
+    */
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  0.0f, -15.0f), 
+        glm::vec3(-1.5f,  0.0f, -2.5f),  
+        glm::vec3(-3.8f,  0.0f, -12.3f),  
+        glm::vec3( 2.4f,  0.0f, -3.5f),  
+        glm::vec3(-1.7f,  0.0f, -7.5f),  
+        glm::vec3( 1.3f,  0.0f, -2.5f),  
+        glm::vec3( 1.5f,  0.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.0f, -1.5f), 
+        glm::vec3(-1.3f,  0.0f, -1.5f)  
+    };
+    
 
     // left bot --- right bot --- top right --- top left
     float objectVertices[] = {
@@ -212,20 +227,26 @@ int main(){
     Collider playerCd(objectVertices, sizeof(objectVertices)/sizeof(float));
 
     Collider objectCd(vertices, sizeof(vertices)/sizeof(float));
-    vector<Collider> objectColliders;
 
     ColliderTest colTest(mesh, vertices, sizeof(vertices)/sizeof(float));
 
     for(int i = 0; i < 10; i++){
-        gameObjects.push_back(GameObject(mesh, cubePositions[i]));
-        objectColliders.push_back(Collider(vertices, sizeof(vertices)/sizeof(float)));
+        if(i == 1){
+            gameObjects.push_back(GameObject(mesh, glm::vec3(20.0f, 1.0f, 20.0f), glm::vec3(0.0f, -2.0f, 0.0f)));
+            gameObjects[i].rotate(90, 0, 0);
+            gameObjects[i].addCollider(vertices, sizeof(vertices)/sizeof(float), STATIC);
+            gameObjects[i].collider->update(gameObjects[i].orientation);
+            continue;
+        }
+        float angle = 20.0f * i;
+        gameObjects.push_back(GameObject(mesh, glm::vec3(1.0f, 1.0f, 1.0f), cubePositions[i]));
+        gameObjects[i].rotate(angle, angle*0.3f, angle*0.5f);
+        gameObjects[i].addCollider(vertices, sizeof(vertices)/sizeof(float), STATIC);
+        gameObjects[i].collider->update(gameObjects[i].orientation);
     }
 
     ourShader.use();
-
     float timer = glfwGetTime();
-
-    bool first = true;
 
     while(!glfwWindowShouldClose(window))
     {
@@ -238,6 +259,21 @@ int main(){
         //camera.Position.x = player.position.x;
         //camera.Position.y = player.position.y;
         //camera.Position.z = player.position.z + 3;
+
+        
+        for(unsigned int i = 1; i < 10; i++){
+            CollisionInfo col;
+            if(colTest.hit(gameObjects[i], col)){
+                colTest.onHit(col);
+            }   
+        }
+
+        /*for(unsigned int i = 1; i < 10; i++){
+            CollisionInfo col;
+            if(player.hit(gameObjects[i], col){
+                player.onHit(col);
+            }   
+        }*/
 
         /*camera.Position.x = colTest.position.x;
         camera.Position.y = colTest.position.y;
@@ -266,7 +302,7 @@ int main(){
         const float radius = 5.0f;
         float camX = sin(glfwGetTime()) * radius;
         float camZ = cos(glfwGetTime()) * radius;
-        view = glm::lookAt(glm::vec3(camX, 0.0, camZ), colTest.position, glm::vec3(0.0, 1.0, 0.0));
+        //view = glm::lookAt(glm::vec3(camX, 0.0, camZ), colTest.position, glm::vec3(0.0, 1.0, 0.0));
 
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
@@ -278,17 +314,11 @@ int main(){
         {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, gameObjects[i].position);
-            float angle = 20.0f * i;
-            if(first){
-                gameObjects[i].rotate(angle, angle*0.3f, angle*0.5f);
-                objectColliders[i].set(gameObjects[i].position, gameObjects[i].front, gameObjects[i].up, gameObjects[i].right);
-                objectColliders[i].update(gameObjects[i].orientation);
-            }
             model = model * gameObjects[i].getRotationMatrix();
+            model = glm::scale(model, gameObjects[i].scale);
             ourShader.setMat4("model", model);
             gameObjects[i].draw(ourShader);
         }
-        first = false;
 
         model = glm::mat4(1.0f);
         model = glm::translate(model, colTest.position);
@@ -298,13 +328,13 @@ int main(){
         glDisable(GL_DEPTH_TEST);
 
         lineShader.use();
-        model = glm::translate(model, colTest.offset);
+        model = glm::translate(model, colTest.collider->offset);
         model = glm::scale(model, colTest.scale);
 
         lineShader.setMat4("model", model);
         lineShader.setMat4("projection", projection);
         lineShader.setMat4("view", view);
-        colTest.Collider::draw(lineShader);
+        colTest.collider->draw(lineShader);
         
 
         // PLAYER SETTINGS
@@ -337,32 +367,14 @@ int main(){
         for (unsigned int i = 1; i < 10; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, objectColliders[i].position);
+            model = glm::translate(model, gameObjects[i].position);
             model = model * gameObjects[i].getRotationMatrix();
-            model = glm::translate(model, objectColliders[i].offset);
-            model = glm::scale(model, objectColliders[i].scale);
+            model = glm::translate(model, gameObjects[i].collider->offset);
+            model = glm::scale(model, gameObjects[i].collider->scale);
 
             lineShader.setMat4("model", model);            
-            objectColliders[i].draw(ourShader);
+            gameObjects[i].collider->draw(ourShader);
         }
-        
-        /*for(unsigned int i = 1; i < 10; i++){
-            if(playerCd.hit(objectColliders[i])){
-                std::cout << "index: " << i << "\n";
-                std::cout << "Position: " << playerCd.position.x << " " << playerCd.position.y <<  " " << playerCd.position.z  << "\n";
-                std::cout << "Position: " << objectColliders[i].position.x << " " << objectColliders[i].position.y <<  " " << objectColliders[i].position.z  << "\n";
-            }   
-        }*/
-
-        
-        for(unsigned int i = 1; i < 10; i++){
-            if(colTest.hit(objectColliders[i])){
-                std::cout << "index: " << i << "\n";
-                std::cout << "Position: " << colTest.position.x << " " << colTest.position.y <<  " " << colTest.position.z  << "\n";
-                std::cout << "Position: " << objectColliders[i].position.x << " " << objectColliders[i].position.y <<  " " << objectColliders[i].position.z  << "\n";
-            }   
-        }
-        
         
         glfwSwapBuffers(window);
         glfwPollEvents();    

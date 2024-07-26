@@ -5,16 +5,19 @@
 #include "gameObject.h"
 #include "collider.h"
 
-class ColliderTest : public GameObject, public Collider{
+class ColliderTest : public GameObject{
 
     public:
-        using GameObject::position;
 
         ColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
-        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)) 
-        : GameObject(mesh, position, up, front), Collider(objectVertices, size, objectScale){}
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)) 
+        : GameObject(mesh, objectScale, position, up, front){
+            addCollider(objectVertices, size, DYNAMIC);
+        }
 
         void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime);
+
+        void onHit(CollisionInfo col);
 };
 
 void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp,float deltaTime){
@@ -39,9 +42,16 @@ void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, 
     if(speedUp)
         GameObject::position += 5 * deltaTime * GameObject::front;
 
-    set(GameObject::position, GameObject::front, GameObject::up, GameObject::right);
-
-    update(orientation);
+    if(collider != NULL){
+        collider->set(position, GameObject::front, GameObject::up, GameObject::right);
+        collider->update(orientation);
+    }
 }
+
+void ColliderTest::onHit(CollisionInfo col){
+    
+}
+
+
 
 #endif
