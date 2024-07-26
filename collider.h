@@ -61,9 +61,6 @@ class Collider{
                 if(objectVertices[i+2] > maxZ)
                     maxZ = objectVertices[i+2];
             }
-            //scale.x = abs(maxX - minX) * objectScale.x;
-            //scale.y = abs(maxY - minY) * objectScale.y;
-            //scale.z = abs(maxZ - minZ) * objectScale.z; 
             scale.x = abs(maxX - minX);
             scale.y = abs(maxY - minY);
             scale.z = abs(maxZ - minZ); 
@@ -105,8 +102,11 @@ class Collider{
         unsigned int VAO, VBO, EBO;
         static const float lineVertices[];
         ColliderType type;
+        glm::vec3 minAABB;
+        glm::vec3 maxAABB;
         
         bool checkCollisionAxis(const Collider &other, glm::vec3 axis, CollisionInfo &colInfo);
+        bool checkBoundingBoxAlignedAxis(const Collider &other);
         void setupCollider();
         
 };
@@ -119,6 +119,9 @@ void Collider::set(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 
 }
 
 void Collider::update(glm::quat orientation){
+
+    minAABB = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+    maxAABB = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     for(int i = 0; i < vertices.size(); i += 3){
         glm::vec3 vertex = glm::vec3(vertices[i], vertices[i+1], vertices[i+2]);
@@ -138,6 +141,20 @@ void Collider::update(glm::quat orientation){
         worldVertices[i] = vertex.x;
         worldVertices[i+1] = vertex.y;
         worldVertices[i+2] = vertex.z;
+
+        if(vertex.x < minAABB.x)
+            minAABB.x = vertex.x;
+        if(vertex.y < minAABB.y)
+            minAABB.y = vertex.y;
+        if(vertex.z < minAABB.z)
+            minAABB.z = vertex.z;
+        
+        if(vertex.x > maxAABB.x)
+            maxAABB.x = vertex.x;
+        if(vertex.y > maxAABB.y)
+            maxAABB.y = vertex.y;
+        if(vertex.z > maxAABB.z)
+            maxAABB.z = vertex.z;
     }
 
     //std::cout << worldVertices[0] << " " << worldVertices[1] << " " << worldVertices[2] << "\n";
@@ -161,8 +178,7 @@ bool Collider::checkCollisionAxis(const Collider &other, glm::vec3 axis, Collisi
         else if (p > max1) {
             max1 = p;
             max1Point = glm::vec3(worldVertices[i], worldVertices[i+1], worldVertices[i+2]);
-        }
-            
+        }   
     }
 
     for(int i = 0; i < other.vertices.size(); i+=3){
@@ -172,7 +188,6 @@ bool Collider::checkCollisionAxis(const Collider &other, glm::vec3 axis, Collisi
         else if (p > max2)
             max2 = p; 
     }
-
 
     if (min1 <= min2 && max1 >= min2){
         colInfo.normal = axis;
@@ -191,7 +206,23 @@ bool Collider::checkCollisionAxis(const Collider &other, glm::vec3 axis, Collisi
     return false;
 }
 
+bool Collider::checkBoundingBoxAlignedAxis(const Collider &other){
+    return (
+        minAABB.x <= other.maxAABB.x &&
+        maxAABB.x >= other.minAABB.x &&
+        minAABB.y <= other.maxAABB.y &&
+        maxAABB.y >= other.minAABB.y &&
+        minAABB.z <= other.maxAABB.z &&
+        maxAABB.z >= other.minAABB.z);
+}
+
 bool Collider::hit(const Collider &other, CollisionInfo &collision){
+    if(!checkBoundingBoxAlignedAxis(other))
+        return false;
+    
+    std::cout << "Bounding box Collided\n";
+        
+    
     vector<glm::vec3> axes1;
     vector<glm::vec3> axes2;
     axes1.push_back(front);
@@ -276,7 +307,6 @@ void Collider::onHit(const CollisionInfo& col){
     }else{
         position -= normalMag;
     }
-    //position += col.normal * col.penetration * 1.2f;
 }
 
 void Collider::draw(Shader &shader){
