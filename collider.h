@@ -34,6 +34,7 @@ class Collider{
         std::vector<float> vertices;
         float worldVertices[72];
 
+
         Collider(float* objectVertices, int size, ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)){ 
             this->type = type;
             float minY, maxY, minX, maxX, minZ, maxZ;
@@ -70,15 +71,20 @@ class Collider{
             offset.z = (1 - scale.z) / 2;
 
             scale = objectScale;
-
+            
+            
             for(int i = 0; i < 72; i+=3){
-                vertices.push_back(lineVertices[i]);
-                vertices.push_back(lineVertices[i + 1]);
-                vertices.push_back(lineVertices[i + 2]);
+                glm::vec3 vertex = glm::vec3(lineVertices[i], lineVertices[i+1], lineVertices[i+2]);
+                vertex += offset;
+                vertex = scale * vertex;
+                
+                vertices.push_back(vertex.x);
+                vertices.push_back(vertex.y);
+                vertices.push_back(vertex.z);
 
-                worldVertices[i] = lineVertices[i];
-                worldVertices[i+1] = lineVertices[i + 1];
-                worldVertices[i+1] = lineVertices[i + 2];
+                worldVertices[i] = vertex.x;
+                worldVertices[i+1] = vertex.y;
+                worldVertices[i+1] = vertex.z;
             }
 
             setupCollider();
@@ -125,18 +131,10 @@ void Collider::update(glm::quat orientation){
 
     for(int i = 0; i < vertices.size(); i += 3){
         glm::vec3 vertex = glm::vec3(vertices[i], vertices[i+1], vertices[i+2]);
-        vertex += offset;
-        vertex = scale * vertex;
+        //vertex += offset;
+        //vertex = scale * vertex;
         vertex = orientation * vertex;
         vertex += position;
-        
-        /*glm::vec4 vertex = glm::vec4(vertices[i], vertices[i+1], vertices[i+2], 1.0f);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, position);
-        model = model * glm::toMat4(orientation);
-        model = glm::scale(model, scale); 
-        model = glm::translate(model, offset); 
-        vertex = model * vertex;*/
         
         worldVertices[i] = vertex.x;
         worldVertices[i+1] = vertex.y;
@@ -220,8 +218,7 @@ bool Collider::hit(const Collider &other, CollisionInfo &collision){
     if(!checkBoundingBoxAlignedAxis(other))
         return false;
     
-    std::cout << "Bounding box Collided\n";
-        
+    //std::cout << "Bounding box Collided\n";
     
     vector<glm::vec3> axes1;
     vector<glm::vec3> axes2;
@@ -245,9 +242,10 @@ bool Collider::hit(const Collider &other, CollisionInfo &collision){
     if(!exist3)
         axes2.push_back(other.up);
 
+    float size2 = axes2.size();
 
     for(int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
+        for(int j = 0; j < size2; j++){
             bool exist = false;
             glm::vec3 newAxis = glm::normalize(glm::cross(axes1[i], axes2[j]));
 

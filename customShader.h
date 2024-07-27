@@ -8,8 +8,19 @@
 class CustomShader : public Shader{
 
     public:
+        CustomShader(): Shader(){}
+
         CustomShader(const char* vertexPath, const char* fragmentPath) : Shader(vertexPath, fragmentPath){}
 
+        CustomShader(const CustomShader& shader){
+            ID = shader.ID;
+        }
+    
+        CustomShader& operator=(const CustomShader& shader){
+            ID = shader.ID;
+            return *this;
+        }
+        
         void setPointLight(int index, const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, float constant, float linear, float quadratic){
             std::string s = "pointLights[" + std::to_string(index) + "].";
             this->setVec3((s + "position").c_str(), position);

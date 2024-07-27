@@ -12,21 +12,43 @@
 class GameObject : public Mesh{
     public:
         glm::vec3 position;
-        glm::vec3 front;
-        glm::vec3 up;
-        glm::vec3 right;
+        glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
         glm::vec3 scale;
         glm::quat orientation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
 
         Collider* collider = NULL;
         
-        GameObject(const Mesh &mesh, glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f)) 
+        GameObject(){}
+
+        GameObject(const Mesh &mesh, glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f)) 
         : Mesh(mesh.vertices, mesh.indices, mesh.textures){
             this->scale = scale;
             this->position = position;
-            this->up = up;
-            this->front = front;
-            right = glm::normalize(glm::cross(front, up));
+            rotate(rotation.x, rotation.y, rotation.z);
+        }
+
+        GameObject(const GameObject& gameObject) : Mesh(gameObject){
+            this->position = gameObject.position;
+            this->front = gameObject.front;
+            this->up = gameObject.up;
+            this->right = gameObject.right;
+            this->scale = gameObject.scale;
+            this->orientation = gameObject.orientation;
+            this->collider = gameObject.collider;
+        }
+    
+        GameObject& operator=(const GameObject& gameObject){
+            Mesh::operator = (gameObject);
+            this->position = gameObject.position;
+            this->front = gameObject.front;
+            this->up = gameObject.up;
+            this->right = gameObject.right;
+            this->scale = gameObject.scale;
+            this->orientation = gameObject.orientation;
+            this->collider = gameObject.collider;
+            return *this;
         }
 
         glm::mat4 getRotationMatrix(){
@@ -46,7 +68,7 @@ class GameObject : public Mesh{
 bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
     if(collider == NULL || other.collider == NULL)
         return false;
-    
+
     if(collider->hit(*(other.collider), collision)){
         collider->onHit(collision);
         this->position = collider->position;

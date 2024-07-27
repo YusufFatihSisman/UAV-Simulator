@@ -9,6 +9,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
+#include "game.h"
 #include "customShader.h"
 #include "camera.h"
 //#include "mesh.h"
@@ -51,6 +52,7 @@ int main(){
         glfwTerminate();
         return -1;
     }
+
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
     glfwSetCursorPosCallback(window, mouse_callback);
@@ -65,10 +67,10 @@ int main(){
         return -1;
     }    
     
-    glEnable(GL_DEPTH_TEST);
-    CustomShader ourShader("vertex.GLSL", "fragment.GLSL");
-    CustomShader lightShader("lightVertex.GLSL", "lightFragment.GLSL");
-    Shader lineShader("lineVertex.GLSL", "lineFragment.GLSL");
+    Game game;
+    game.addShader(OBJECT, "vertex.GLSL", "fragment.GLSL");
+    game.addShader(LIGHT, "lightVertex.GLSL", "lightFragment.GLSL");
+    game.addShader(COLLIDER, "lineVertex.GLSL", "lineFragment.GLSL");
 
     // left bot --- right bot --- top right --- top left
     float vertices[] = {
@@ -164,7 +166,6 @@ int main(){
         glm::vec3(-1.3f,  0.0f, -1.5f)  
     };
     
-
     // left bot --- right bot --- top right --- top left
     float objectVertices[] = {
         -0.5f, 0.0f, 0.5f,  -1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  // left forward
@@ -174,7 +175,7 @@ int main(){
     };
 
     vector<Vertex> objectVertexVector;
-    vector<unsigned int> objectIndiceVector;
+    vector<unsigned int> objectIndiceVector{0,1,2,3,1,2};
     for(int i = 0; i < sizeof(objectVertices)/sizeof(float); i+=8){
         Vertex v;
         v.Position = glm::vec3(objectVertices[i], objectVertices[i+1], objectVertices[i+2]);
@@ -182,13 +183,6 @@ int main(){
         v.TexCoords = glm::vec2(objectVertices[i+6], objectVertices[i+7]);
         objectVertexVector.push_back(v);
     }
-    objectIndiceVector.push_back(0);
-    objectIndiceVector.push_back(1);
-    objectIndiceVector.push_back(2);
-
-    objectIndiceVector.push_back(3);
-    objectIndiceVector.push_back(1);
-    objectIndiceVector.push_back(2);
 
     vector<Vertex> verticeVector;
     vector<unsigned int> indiceVector;
@@ -208,179 +202,39 @@ int main(){
     unsigned int diffuseMap = loadTexture("container.png");
     unsigned int specularMap = loadTexture("container_specular.png");
 
-    Texture t0, t1;
-    t0.id = diffuseMap;
-    t0.type = "diffuse";
-    t1.id = specularMap;
-    t1.type = "specular";
+    Texture t0{diffuseMap, "diffuse"};
+    Texture t1{specularMap, "specular"};
 
-    vector<Texture> textureVector;
-    textureVector.push_back(t0);
-    textureVector.push_back(t1);
+    vector<Texture> textureVector{t0, t1};
 
     vector<GameObject> gameObjects;
     Mesh mesh(verticeVector, indiceVector, textureVector);
-
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
-    Uav player(mesh2);
 
-    Collider playerCd(objectVertices, sizeof(objectVertices)/sizeof(float));
+    //Uav player(mesh2);
 
-    Collider objectCd(vertices, sizeof(vertices)/sizeof(float));
+    game.addColliderTest(mesh, vertices, sizeof(vertices)/sizeof(float), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), DYNAMIC, glm::vec3(1.0f, 1.0f, 1.0f));
 
-    ColliderTest colTest(mesh, vertices, sizeof(vertices)/sizeof(float));
-
-    for(int i = 0; i < 10; i++){
+    for(int i = 1; i < 10; i++){
         if(i == 1){
-            gameObjects.push_back(GameObject(mesh, glm::vec3(20.0f, 1.0f, 20.0f), glm::vec3(0.0f, -2.0f, 0.0f)));
-            gameObjects[i].rotate(90, 0, 0);
-            gameObjects[i].addCollider(vertices, sizeof(vertices)/sizeof(float), STATIC);
-            gameObjects[i].collider->update(gameObjects[i].orientation);
+            game.addObject(GameObject(mesh, glm::vec3(20.0f, 1.0f, 20.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(90.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), STATIC);
             continue;
         }
         float angle = 20.0f * i;
-        gameObjects.push_back(GameObject(mesh, glm::vec3(1.0f, 1.0f, 1.0f), cubePositions[i]));
-        gameObjects[i].rotate(angle, angle*0.3f, angle*0.5f);
-        gameObjects[i].addCollider(vertices, sizeof(vertices)/sizeof(float), STATIC);
-        gameObjects[i].collider->update(gameObjects[i].orientation);
+        game.addObject(GameObject(mesh, glm::vec3(1.0f, 1.0f, 1.0f), cubePositions[i], glm::vec3(angle, angle*0.3f, angle*0.5f)), vertices, sizeof(vertices)/sizeof(float), STATIC);
     }
 
-    ourShader.use();
     float timer = glfwGetTime();
+    glEnable(GL_DEPTH_TEST);
+
+    game.start();
 
     while(!glfwWindowShouldClose(window))
     {
-        glEnable(GL_DEPTH_TEST);
-        float currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        processInput(window, player, colTest);
-        //camera.Position.x = player.position.x;
-        //camera.Position.y = player.position.y;
-        //camera.Position.z = player.position.z + 3;
-
-        
-        for(unsigned int i = 1; i < 10; i++){
-            CollisionInfo col;
-            if(colTest.hit(gameObjects[i], col)){
-                colTest.onHit(col);
-            }   
-        }
-
-        /*for(unsigned int i = 1; i < 10; i++){
-            CollisionInfo col;
-            if(player.hit(gameObjects[i], col){
-                player.onHit(col);
-            }   
-        }*/
-
-        /*camera.Position.x = colTest.position.x;
-        camera.Position.y = colTest.position.y;
-        camera.Position.z = colTest.position.z + 3;*/
-
-        //render
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        // bind Texture
-        ourShader.use();
-        ourShader.setVec3("viewPos", camera.Position);
-        ourShader.setFloat("material.shininess", 32.0f);
-
-        // Lights
-        ourShader.setDirectionLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.4f, 0.4f, 0.4f), glm::vec3(0.5f, 0.5f, 0.5f));
-        ourShader.setPointLight(0, pointLightPositions[0], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
-        ourShader.setPointLight(1, pointLightPositions[1], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
-        ourShader.setPointLight(2, pointLightPositions[2], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
-        ourShader.setPointLight(3, pointLightPositions[3], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);   
-
-        // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-
-        const float radius = 5.0f;
-        float camX = sin(glfwGetTime()) * radius;
-        float camZ = cos(glfwGetTime()) * radius;
-        //view = glm::lookAt(glm::vec3(camX, 0.0, camZ), colTest.position, glm::vec3(0.0, 1.0, 0.0));
-
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
-
-        // world transformation
-        glm::mat4 model = glm::mat4(1.0f);
-        
-        for (unsigned int i = 1; i < 10; i++)
-        {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, gameObjects[i].position);
-            model = model * gameObjects[i].getRotationMatrix();
-            model = glm::scale(model, gameObjects[i].scale);
-            ourShader.setMat4("model", model);
-            gameObjects[i].draw(ourShader);
-        }
-
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, colTest.position);
-        model = model * colTest.getRotationMatrix();
-        ourShader.setMat4("model", model);
-        colTest.GameObject::draw(ourShader);
-        glDisable(GL_DEPTH_TEST);
-
-        lineShader.use();
-        model = glm::translate(model, colTest.collider->offset);
-        model = glm::scale(model, colTest.scale);
-
-        lineShader.setMat4("model", model);
-        lineShader.setMat4("projection", projection);
-        lineShader.setMat4("view", view);
-        colTest.collider->draw(lineShader);
-        
-
-        // PLAYER SETTINGS
-        /*
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, player.position);
-        model = model * player.getRotationMatrix();
-        ourShader.setMat4("model", model);
-        player.draw(ourShader);
-
-        if(glfwGetTime() - timer > 1){
-            timer = glfwGetTime();
-            //player.printInfo();
-        }
-
-        glDisable(GL_DEPTH_TEST);
-        playerCd.set(player.position, player.GameObject::front, player.up, player.right);
-        playerCd.update(player.orientation);
-        lineShader.use();
-        model = glm::translate(model, playerCd.offset);
-        model = glm::scale(model, playerCd.scale);
-
-        lineShader.setMat4("model", model);
-        lineShader.setMat4("projection", projection);
-        lineShader.setMat4("view", view);
-        playerCd.draw(lineShader);
-        */
-
-        // draw colliders
-        for (unsigned int i = 1; i < 10; i++)
-        {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, gameObjects[i].position);
-            model = model * gameObjects[i].getRotationMatrix();
-            model = glm::translate(model, gameObjects[i].collider->offset);
-            model = glm::scale(model, gameObjects[i].collider->scale);
-
-            lineShader.setMat4("model", model);            
-            gameObjects[i].collider->draw(ourShader);
-        }
-        
+        game.update(window);
         glfwSwapBuffers(window);
         glfwPollEvents();    
     }
-    
-    ourShader.terminate();
 
     glfwTerminate();
     
@@ -453,7 +307,7 @@ void processInput(GLFWwindow *window, Uav &player, ColliderTest &colTest)
     }
 
     player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
-    colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime);
+    //colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime);
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)

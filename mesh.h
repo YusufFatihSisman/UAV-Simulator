@@ -28,12 +28,33 @@ class Mesh{
         vector<unsigned int> indices;
         vector<Texture>      textures;
 
+        Mesh(){}
+
         Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures){
             this->vertices = vertices;
             this->indices = indices;
             this->textures = textures;
 
             setupMesh();
+        }
+
+        Mesh(const Mesh& mesh){
+            this->vertices = mesh.vertices;
+            this->indices = mesh.indices;
+            this->textures = mesh.textures;
+            this->VAO = mesh.VAO;
+            this->VBO = mesh.VBO;
+            this->EBO = mesh.EBO;
+        }
+    
+        Mesh& operator=(const Mesh& mesh){
+            this->vertices = mesh.vertices;
+            this->indices = mesh.indices;
+            this->textures = mesh.textures;
+            this->VAO = mesh.VAO;
+            this->VBO = mesh.VBO;
+            this->EBO = mesh.EBO;
+            return *this;
         }
 
         void free(){
