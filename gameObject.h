@@ -60,20 +60,33 @@ class GameObject : public Mesh{
         bool hit(const GameObject &other, CollisionInfo &collision);
 
         inline void addCollider(float* objectVertices, int size, ColliderType type = STATIC);
-
-    private:
-        void onHit(const CollisionInfo &collision);
 };
 
 bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
     if(collider == NULL || other.collider == NULL)
         return false;
 
+    glm::vec3 endPos = collider->position;
+    collider->position = position + front * collider->scale;
+    collider->update(orientation);
+    while(glm::length(position - collider->position) < glm::length(position - endPos)){
+        if(collider->hit(*(other.collider), collision)){
+            collider->onHit(collision);
+            this->position = collider->position;
+            return true;
+        }
+        collider->position += front * collider->scale;
+        collider->update(orientation);
+    }
+
+    collider->position = endPos;
+    collider->update(orientation);
     if(collider->hit(*(other.collider), collision)){
         collider->onHit(collision);
         this->position = collider->position;
         return true;
     }
+    
     return false;
 }
 

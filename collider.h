@@ -12,6 +12,7 @@
 enum ColliderType{
     STATIC,
     DYNAMIC,
+    GROUND,
     SPEACIAL
 };
 
@@ -19,6 +20,7 @@ struct CollisionInfo{
     float penetration;
     glm::vec3 normal;
     glm::vec3 pointOnPlane;
+    ColliderType type;
 };
 
 class Collider{
@@ -70,13 +72,14 @@ class Collider{
             offset.y = (1 - scale.y) / 2;
             offset.z = (1 - scale.z) / 2;
 
-            scale = objectScale;
+            scale *= objectScale;
             
             
             for(int i = 0; i < 72; i+=3){
                 glm::vec3 vertex = glm::vec3(lineVertices[i], lineVertices[i+1], lineVertices[i+2]);
-                vertex += offset;
+                
                 vertex = scale * vertex;
+                vertex += offset;
                 
                 vertices.push_back(vertex.x);
                 vertices.push_back(vertex.y);
@@ -195,7 +198,7 @@ bool Collider::checkCollisionAxis(const Collider &other, glm::vec3 axis, Collisi
     }
 
     if (min2 <= min1 && max2 >= min1){
-        colInfo.normal = axis;
+        colInfo.normal = -axis;
         colInfo.penetration = min1 - max2;
         colInfo.pointOnPlane = min1Point + colInfo.normal * colInfo.penetration;
         return true;
@@ -291,6 +294,7 @@ bool Collider::hit(const Collider &other, CollisionInfo &collision){
     }
 
     collision = bestCollisionInfo;
+    collision.type = other.type;
     return true;
 }
 
@@ -298,13 +302,18 @@ void Collider::onHit(const CollisionInfo& col){
     if(type == STATIC || type == SPEACIAL)
         return;
 
-    glm::vec3 normalMag = col.normal * col.penetration;
+    if(col.type == SPEACIAL)
+        return;
 
+    position += col.normal * col.penetration;
+    /*
+    glm::vec3 normalMag = col.normal * col.penetration;
     if(glm::length((position + normalMag) - col.pointOnPlane) > glm::length(position- col.pointOnPlane)){
         position += normalMag;
     }else{
         position -= normalMag;
     }
+    */
 }
 
 void Collider::draw(Shader &shader){

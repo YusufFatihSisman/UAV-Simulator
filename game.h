@@ -36,19 +36,21 @@ class Game{
         void start();
         void update(GLFWwindow* window);
         bool checkCollision(GameObject object, CollisionInfo &colInfo);
-        void draw();
-        void drawColliders();
+        void draw(bool cT = false);
+        void drawColliders(bool cT = false);
 
-        void processInput(GLFWwindow *window);
+        void processInput(GLFWwindow *window, bool cT = false);
 
         void addShader(ShaderType shaderType, const char* vertexPath, const char* fragmentPath);
+        void addPlayer(const Uav &player, float* objectVertices, int size, ColliderType type = DYNAMIC);
+        void addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC);
         void addObject(const GameObject &object, float* objectVertices, int size, ColliderType type = STATIC);
         void addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
             glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f));
 
     private:
         Camera camera;
-        //Uav player;
+        Uav player;
         ColliderTest colTest;
         vector<GameObject> gameObjects;
         CustomShader shaders[SHADER_MAX];
@@ -81,6 +83,7 @@ void Game::start(){
 }
 
 void Game::update(GLFWwindow* window){
+    bool cT = false;
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -90,21 +93,23 @@ void Game::update(GLFWwindow* window){
     if(currentFrame - lastFpsTime > 1){
         lastFpsTime = currentFrame;
         cout << "FPS: " << fpsCounter << "\n";
+        player.printInfo();
         fpsCounter = 0;
     }
 
-    processInput(window);
+    processInput(window, cT);
 
-    //camera.Position.x = player.position.x;
-    //camera.Position.y = player.position.y;
-    //camera.Position.z = player.position.z + 3;
+    camera.Position.x = player.position.x - 14;
+    camera.Position.y = player.position.y + 2;
+    camera.Position.z = player.position.z;
+    camera.Front = glm::normalize(player.position - camera.Position);
 
     /*camera.Position.x = colTest.position.x;
     camera.Position.y = colTest.position.y;
     camera.Position.z = colTest.position.z + 3;*/
 
-    draw();
-    drawColliders();
+    draw(cT);
+    drawColliders(cT);
 }
 
 bool Game::checkCollision(GameObject object, CollisionInfo &colInfo){
@@ -115,7 +120,7 @@ bool Game::checkCollision(GameObject object, CollisionInfo &colInfo){
     return false;
 }
 
-void Game::draw(){
+void Game::draw(bool cT){
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -131,21 +136,23 @@ void Game::draw(){
     shaders[OBJECT].setMat4("view", view);
 
     glm::mat4 model = glm::mat4(1.0f);
-    /*
-    model = glm::translate(model, player.position);
-    model = model * player.getRotationMatrix();
-    model = glm::scale(model, player.scale);
-    shaders[OBJECT].setMat4("model", model);
-    player.draw(shaders[OBJECT]);
-    */
-
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, colTest.position);
-    model = model * colTest.getRotationMatrix();
-    shaders[OBJECT].setMat4("model", model);
-    colTest.draw(shaders[OBJECT]);
     
-
+    if(!cT){
+        //player.printInfo();
+        model = glm::translate(model, player.position);
+        model = model * player.getRotationMatrix();
+        model = glm::scale(model, player.scale);
+        shaders[OBJECT].setMat4("model", model);
+        player.draw(shaders[OBJECT]);
+    }else{
+        model = glm::translate(model, colTest.position);
+        model = model * colTest.getRotationMatrix();
+        shaders[OBJECT].setMat4("model", model);
+        colTest.draw(shaders[OBJECT]);
+    }
+    
+    
+    
     for(unsigned int i = 0; i < gameObjects.size(); i++){
         model = glm::mat4(1.0f);
         model = glm::translate(model, gameObjects[i].position);
@@ -156,7 +163,7 @@ void Game::draw(){
     }
 }
 
-void Game::drawColliders(){
+void Game::drawColliders(bool cT){
     glDisable(GL_DEPTH_TEST);
     shaders[COLLIDER].use();
 
@@ -166,19 +173,19 @@ void Game::drawColliders(){
     shaders[COLLIDER].setMat4("view", view);
 
     glm::mat4 model = glm::mat4(1.0f);
-    /*
-    model = glm::translate(model, player.position);
-    model = model * player.getRotationMatrix();
-    shaders[COLLIDER].setMat4("model", model);
-    player.collider->draw(shaders[COLLIDER]);
-    */
     
-    model = glm::translate(model, colTest.position);
-    model = model * colTest.getRotationMatrix();
-    shaders[COLLIDER].setMat4("model", model);
-    colTest.collider->draw(shaders[COLLIDER]);
+    if(!cT){
+        model = glm::translate(model, player.position);
+        model = model * player.getRotationMatrix();
+        shaders[COLLIDER].setMat4("model", model);
+        player.collider->draw(shaders[COLLIDER]);
+    }else{
+        model = glm::translate(model, colTest.position);
+        model = model * colTest.getRotationMatrix();
+        shaders[COLLIDER].setMat4("model", model);
+        colTest.collider->draw(shaders[COLLIDER]);
+    }
     
-
     for (unsigned int i = 0; i < gameObjects.size(); i++){
         model = glm::mat4(1.0f);
         model = glm::translate(model, gameObjects[i].position);
@@ -190,7 +197,7 @@ void Game::drawColliders(){
     glEnable(GL_DEPTH_TEST);
 }
 
-void Game::processInput(GLFWwindow *window){
+void Game::processInput(GLFWwindow *window, bool cT){
     bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false, speedLock = false;
     
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -249,12 +256,26 @@ void Game::processInput(GLFWwindow *window){
         lockHold = false;
     }*/
 
-    //player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
-    colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime, gameObjects);
+    if(!cT)
+        player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime, gameObjects);
+    else
+        colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime, gameObjects);
 }
 
 void Game::addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){
     colTest = ColliderTest(mesh, objectVertices, size, position, rotation, type, objectScale);
+}
+
+void Game::addPlayer(const Uav &player, float* objectVertices, int size, ColliderType type){
+    this->player = player;
+    this->player.addCollider(objectVertices, size, type);
+    this->player.collider->update(player.orientation);
+}
+
+void Game::addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position, ColliderType type){
+    player = Uav(mesh, position);
+    player.addCollider(objectVertices, size, type);
+    this->player.collider->update(player.orientation);
 }
 
 void Game::addObject(const GameObject &object, float* objectVertices, int size, ColliderType type){

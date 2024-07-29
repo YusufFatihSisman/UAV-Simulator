@@ -14,10 +14,24 @@ class Uav : public GameObject, protected Rigidbody{
         float speedRate = 50;
         float slowRate = 50;
 
-        Uav(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f), float m = 1
-        ) : GameObject(mesh, position, up, front), Rigidbody(position, front, m){}
+        Uav(){}
 
-        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime);
+        Uav(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), float m = 1
+        ) : GameObject(mesh, scale, position, rotation), Rigidbody(position, m){}
+
+        Uav(const Uav& uav) : GameObject(uav), Rigidbody(uav){
+            Rigidbody::front = GameObject::front;
+        }
+    
+        Uav& operator=(const Uav& uav){
+            GameObject::operator = (uav);
+            Rigidbody::operator = (uav);
+            Rigidbody::front = GameObject::front;
+            return *this;
+        }
+
+        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime, vector<GameObject> &gameObjects);
+        void onHit(const CollisionInfo &colInfo);
 
         void printInfo(){
             std::cout << "Drag: " << getDrag() << "\n";
@@ -50,7 +64,7 @@ class Uav : public GameObject, protected Rigidbody{
 
 };
 
-void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime){
+void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime, vector<GameObject> &gameObjects){
     float rollVelocity = 50 * deltaTime;
     float xAngle = 0, yAngle = 0, zAngle = 0;
     if (q)
@@ -95,21 +109,33 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
         thrustForce = getDrag();
         std::cout << "Lock\n";
     }
-    //std::cout << "Thrust: " << thrustForce << "\n";
     newForce += thrustForce * GameObject::front;
     setForce(newForce);
-
-    //std::cout << "Velocity: " << glm::length(currentVelocity) << "\n";
-    //std::cout << "Velocity: " << vVelocity << "\n";
-    //std::cout << "Horizontal Velocity: " << hVelocity << "\n";
     update(deltaTime);
-    //if(glm::dot(glm::normalize(Rigidbody::front), glm::normalize(currentVelocity)) < 0)
-    //    currentVelocity = glm::vec3(0,0,0);
-    
-    GameObject::position = Rigidbody::position;
-    //std::cout << "Position: " << GameObject::position.x << " " << GameObject::position.y <<  " " << GameObject::position.z  << "\n";
-    //std::cout << "Force magniuted: " << glm::length(currentForce) << "\n";
-    //std::cout << "Velocity: " << currentVelocity.x << " " << currentVelocity.y <<  " " << currentVelocity.z  << "\n";
+
+    //GameObject::position = Rigidbody::position;
+    if(collider != NULL){
+        collider->set(Rigidbody::position, GameObject::front, GameObject::up, GameObject::right);
+        collider->update(orientation);
+        CollisionInfo colInfo;
+        for(unsigned int i = 0; i < gameObjects.size(); i++){
+            if(hit(gameObjects[i], colInfo))
+                onHit(colInfo);
+        }
+        GameObject::position = collider->position;
+        Rigidbody::position = GameObject::position;
+    }else{
+        GameObject::position = Rigidbody::position;
+    }
+}
+
+void Uav::onHit(const CollisionInfo &colInfo){
+    if(colInfo.type == GROUND)
+        hVelocity = 0;    
+    if(colInfo.type == STATIC){
+        thrustForce = 0;
+        vVelocity = 0;
+    }  
 }
 
 #endif

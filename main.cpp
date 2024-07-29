@@ -211,13 +211,19 @@ int main(){
     Mesh mesh(verticeVector, indiceVector, textureVector);
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
 
-    //Uav player(mesh2);
+    Uav player(mesh2);
+    //game.addPlayer(mesh2, objectVertices, sizeof(objectVertices)/sizeof(float), glm::vec3(0.0f, 0.0f, 0.0f), DYNAMIC);
+    game.addPlayer(player, objectVertices, sizeof(objectVertices)/sizeof(float));
 
     game.addColliderTest(mesh, vertices, sizeof(vertices)/sizeof(float), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), DYNAMIC, glm::vec3(1.0f, 1.0f, 1.0f));
 
     for(int i = 1; i < 10; i++){
         if(i == 1){
-            game.addObject(GameObject(mesh, glm::vec3(20.0f, 1.0f, 20.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(90.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), STATIC);
+            game.addObject(GameObject(mesh, glm::vec3(20.0f, 1.0f, 1000.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), GROUND);
+            continue;
+        }
+        else if(i == 2){
+            game.addObject(GameObject(mesh, glm::vec3(20.0f, 10.0f, 1.0f), glm::vec3(0.0f, -1.5f, -200.0f), glm::vec3(0.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), STATIC);
             continue;
         }
         float angle = 20.0f * i;
@@ -306,7 +312,7 @@ void processInput(GLFWwindow *window, Uav &player, ColliderTest &colTest)
         lockHold = false;
     }
 
-    player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
+    //player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime);
     //colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime);
 }
 

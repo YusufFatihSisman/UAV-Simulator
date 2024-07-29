@@ -54,12 +54,11 @@ void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, 
     if(collider != NULL){
         collider->set(position, GameObject::front, GameObject::up, GameObject::right);
         collider->update(orientation);
-    }
-
-    CollisionInfo colInfo;
-    for(unsigned int i = 0; i < gameObjects.size(); i++){
-        if(hit(gameObjects[i], colInfo))
-            onHit(colInfo);
+        CollisionInfo colInfo;
+        for(unsigned int i = 0; i < gameObjects.size(); i++){
+            if(hit(gameObjects[i], colInfo))
+                onHit(colInfo);
+        }
     }
 }
 
