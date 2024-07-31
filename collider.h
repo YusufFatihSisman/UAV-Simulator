@@ -36,6 +36,9 @@ class Collider{
         std::vector<float> vertices;
         float worldVertices[72];
 
+        glm::vec3 minAABB;
+        glm::vec3 maxAABB;
+
 
         Collider(float* objectVertices, int size, ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)){ 
             this->type = type;
@@ -106,16 +109,14 @@ class Collider{
         void onHit(const CollisionInfo& col);
         void update(glm::quat orientation);
         void set(glm::vec3 position, glm::vec3 front, glm::vec3 up, glm::vec3 right);
+        bool checkBoundingBoxAlignedAxis(const Collider &other);
 
     private:
         unsigned int VAO, VBO, EBO;
         static const float lineVertices[];
         ColliderType type;
-        glm::vec3 minAABB;
-        glm::vec3 maxAABB;
         
         bool checkCollisionAxis(const Collider &other, glm::vec3 axis, CollisionInfo &colInfo);
-        bool checkBoundingBoxAlignedAxis(const Collider &other);
         void setupCollider();
         
 };

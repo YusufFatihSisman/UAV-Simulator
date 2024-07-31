@@ -11,8 +11,8 @@ class Uav : public GameObject, protected Rigidbody{
         using GameObject::position;
 
         int forceLimit = 50;
-        float speedRate = 50;
-        float slowRate = 50;
+        float speedRate = 200;
+        float slowRate = 200;
 
         Uav(){}
 
@@ -30,10 +30,14 @@ class Uav : public GameObject, protected Rigidbody{
             return *this;
         }
 
-        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime, vector<GameObject> &gameObjects);
+        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime, vector<GameObject> &gameObjects);
         void onHit(const CollisionInfo &colInfo);
+        glm::quat bankingTurn(float xAngle);
 
         void printInfo(){
+            //std::cout << "Yaw : " << yaw << "\n";
+            //std::cout << "Pitch : " << pitch << "\n";
+            //std::cout << "Roll : " << roll << "\n";
             std::cout << "Drag: " << getDrag() << "\n";
             std::cout << "Thrust: " << thrustForce << "\n";
             std::cout << "Lift: " << getLift() << "\n";
@@ -41,52 +45,89 @@ class Uav : public GameObject, protected Rigidbody{
             std::cout << "Velocity: " << vVelocity << "\n";
             std::cout << "Horizontal Velocity: " << hVelocity << "\n";
             std::cout << "Position: " << GameObject::position.x << " " << GameObject::position.y <<  " " << GameObject::position.z  << "\n";
+            /*std::cout << "Up: " << GameObject::up.x << " " << GameObject::up.y <<  " " << GameObject::up.z  << "\n";
+            std::cout << "Front: " << GameObject::front.x << " " << GameObject::front.y <<  " " << GameObject::front.z  << "\n";
+            std::cout << "Right: " << GameObject::right.x << " " << GameObject::right.y <<  " " << GameObject::right.z  << "\n";*/
         }
 
     private:
-        bool stable = false;
+        bool triggerLock = false;
+        bool cruiseFlight = false;
         float thrustForce = 0;
 
         inline float getLift(){
-            return liftCoefficient * airDensity * (pow(vVelocity, 2) / 2) * wingArea;
+            return (cruiseFlight && pitch == 0) ? getWeight() : liftCoefficient * airDensity * (pow(vVelocity, 2) / 2) * wingArea * glm::sin(glm::radians(pitch));
         }
 
         inline float getDrag(){
             return dragCoefficient * airDensity * (pow(vVelocity, 2) / 2) * referenceArea;
         }
 
-        float liftCoefficient = 0.001;
+        float liftCoefficient = 0.01;
         float airDensity = 0.2;
         float wingArea = 20;
 
-        float dragCoefficient = 0.02;
+        float dragCoefficient = 0.005;
         float referenceArea = 25;
+
+        //float hVelocity = 0;
+        //float vVelocity = 0;
 
 };
 
-void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool speedLock, float deltaTime, vector<GameObject> &gameObjects){
-    float rollVelocity = 50 * deltaTime;
+void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime, vector<GameObject> &gameObjects){
+    float rotationVelocity = 50 * deltaTime;
     float xAngle = 0, yAngle = 0, zAngle = 0;
     if (q)
-        zAngle = -rollVelocity;
+        zAngle = (roll > -30) ? -rotationVelocity : 0;
     if (e)
-        zAngle = rollVelocity;
-    if (left)
-        xAngle = rollVelocity;
-    if (right)
-        xAngle = -rollVelocity;
-    if (down)
-        yAngle = -rollVelocity;
-    if (up)
-        yAngle = rollVelocity;
-    
-    if(q || e || right || left || up || down){
-        glm::quat quaternion = rotate(xAngle, yAngle, zAngle);
-        Rigidbody::front = GameObject::front;
-        rotateForces(quaternion);
+        zAngle = (roll < 30) ? rotationVelocity : 0;
+    if(!q && !e){
+        if(roll < 1 && roll > -1)
+            rotationVelocity = abs(roll);
+        if(roll > 0)
+            zAngle = -rotationVelocity;
+        else if(roll < 0)
+            zAngle = rotationVelocity;
     }
 
-    glm::vec3 newForce(0.0, 0.0, 0.0);
+    if(cruiseMod && !triggerLock){
+        cruiseFlight = !cruiseFlight;
+        triggerLock = true;
+    }else{
+        triggerLock = false;
+    }
+        
+
+    /*rotationVelocity = 50 * deltaTime;
+    if (left)
+        xAngle = rotationVelocity;
+    if (right)
+        xAngle = -rotationVelocity;*/
+
+    rotationVelocity = 50 * deltaTime;
+    if (down){
+        yAngle = (pitch > -20) ? -rotationVelocity : 0;
+        //cruiseFlight = false;
+    }
+    if (up){
+        yAngle = (pitch < 20) ? rotationVelocity : 0;
+        //cruiseFlight = false;
+    }  
+    if(!down && !up){
+        if(pitch < 1 && pitch > -1)
+            rotationVelocity = abs(pitch);
+        if(pitch > 0)
+            yAngle = -rotationVelocity;
+        else if(pitch < 0)
+            yAngle = rotationVelocity;
+    }
+    
+    if(xAngle != 0 || zAngle != 0 || yAngle != 0){
+        //std::cout << "Rotation\n";
+        glm::quat quaternion = rotate(xAngle, yAngle, zAngle);
+        Rigidbody::front = GameObject::front;
+    }
 
     if(speedUp){
         thrustForce += speedRate * deltaTime;
@@ -97,23 +138,38 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
             thrustForce = 0;
     }
 
-    if(speedLock){
-        stable = !stable;
-    }
-    
-    newForce += getLift() * GameObject::up;
+    if(cruiseFlight && pitch == 0)
+        hVelocity = 0;
+
+    glm::vec3 newForce(0.0, 0.0, 0.0);
+    newForce += getLift() * glm::vec3(0.0f, GameObject::up.y, GameObject::up.z);
     newForce += getWeight() * glm::vec3(0.0f, -1.0f, 0.0f);
     newForce += getDrag() * -GameObject::front;
-
-    if(stable){
-        thrustForce = getDrag();
-        std::cout << "Lock\n";
-    }
     newForce += thrustForce * GameObject::front;
+
+    float verticalAcceleration = (sqrt(pow(newForce.x, 2) + pow(newForce.z, 2)) / m);
+    float avgVe = vVelocity;
+    if(GameObject::front.z * newForce.z > 0)
+        avgVe += verticalAcceleration * deltaTime;
+    else{
+        avgVe -= verticalAcceleration * deltaTime;
+        if(avgVe < 0.5f)
+            avgVe = 0;
+    }
+    avgVe *= 0.5f;
+    float sideForce = abs(getLift()) * sin(glm::radians(roll));
+    if(sideForce != 0){
+        float sideAcc = sideForce / 1.0f;
+        float R = pow(avgVe, 2) / sideAcc;
+        float angle = (avgVe / R) * deltaTime;
+        glm::quat quaternion = bankingTurn(glm::degrees(-angle));
+        Rigidbody::front = GameObject::front;
+    }
+
     setForce(newForce);
     update(deltaTime);
 
-    //GameObject::position = Rigidbody::position;
+
     if(collider != NULL){
         collider->set(Rigidbody::position, GameObject::front, GameObject::up, GameObject::right);
         collider->update(orientation);
@@ -136,6 +192,23 @@ void Uav::onHit(const CollisionInfo &colInfo){
         thrustForce = 0;
         vVelocity = 0;
     }  
+}
+
+glm::quat Uav::bankingTurn(float xAngle){
+    float cosY = cos(glm::radians(xAngle/2));
+    float sinY = sin(glm::radians(xAngle/2));
+
+    //glm::vec3 newAxis =  glm::normalize(glm::vec3(0, up.y, up.z));
+    glm::vec3 newAxis =  glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::quat qY = glm::quat(cosY, newAxis.x * sinY, newAxis.y * sinY, newAxis.z * sinY);
+
+    orientation = glm::normalize(qY * orientation);
+
+    GameObject::front = glm::normalize(qY * GameObject::front);
+    up = glm::normalize(qY * up);
+    right = glm::normalize(glm::cross(GameObject::front, up));
+
+    return qY;
 }
 
 #endif

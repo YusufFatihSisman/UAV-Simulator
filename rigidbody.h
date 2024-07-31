@@ -87,6 +87,8 @@ void Rigidbody::update(float deltaTime, bool directionBased = true){
             newVVelocity = 0;
     }
 
+    //float newHVelocity = hVelocity + (currentForce.y / m) * deltaTime;
+
     if(directionBased){
         float xRatio = front.x == 0 ? 0 : front.x / (abs(front.x) + abs(front.z));
         float zRatio = front.z == 0 ? 0 : front.z / (abs(front.x) + abs(front.z));
@@ -95,6 +97,7 @@ void Rigidbody::update(float deltaTime, bool directionBased = true){
         position.x += avgVe * deltaTime * xRatio;
         position.z += avgVe * deltaTime * zRatio;
         position.y += hVelocity * deltaTime;
+        //position.y += (hVelocity + newHVelocity) * 0.5f * deltaTime;
     }
     else {
         position += currentVelocity * deltaTime;
@@ -102,7 +105,7 @@ void Rigidbody::update(float deltaTime, bool directionBased = true){
     }
 
     vVelocity = newVVelocity;
-    hVelocity += (currentForce.y / m) * deltaTime;
+    hVelocity += (currentForce.y / m) * deltaTime;;
 }
 
 #endif

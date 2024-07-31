@@ -99,9 +99,9 @@ void Game::update(GLFWwindow* window){
 
     processInput(window, cT);
 
-    camera.Position.x = player.position.x - 14;
+    camera.Position.x = player.position.x;
     camera.Position.y = player.position.y + 2;
-    camera.Position.z = player.position.z;
+    camera.Position.z = player.position.z + 4;
     camera.Front = glm::normalize(player.position - camera.Position);
 
     /*camera.Position.x = colTest.position.x;
@@ -129,7 +129,7 @@ void Game::draw(bool cT){
     shaders[OBJECT].setVec3("viewPos", camera.Position);
     shaders[OBJECT].setFloat("material.shininess", 32.0f);
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
     glm::mat4 view = camera.GetViewMatrix();
 
     shaders[OBJECT].setMat4("projection", projection);
@@ -198,7 +198,7 @@ void Game::drawColliders(bool cT){
 }
 
 void Game::processInput(GLFWwindow *window, bool cT){
-    bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false, speedLock = false;
+    bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false, cruiseMod = false;
     
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -248,16 +248,12 @@ void Game::processInput(GLFWwindow *window, bool cT){
     if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS){
         slowDown = true;
     }
-    /*if(!lockHold && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-        speedLock = true;
-        lockHold = true;
+    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
+        cruiseMod = true;
     }
-    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE){
-        lockHold = false;
-    }*/
 
     if(!cT)
-        player.processInput(q, e, right, left, up, down, speedUp, slowDown, speedLock, deltaTime, gameObjects);
+        player.processInput(q, e, right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime, gameObjects);
     else
         colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime, gameObjects);
 }
