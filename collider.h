@@ -71,9 +71,13 @@ class Collider{
             scale.y = abs(maxY - minY);
             scale.z = abs(maxZ - minZ); 
 
-            offset.x = (1 - scale.x) / 2;
-            offset.y = (1 - scale.y) / 2;
-            offset.z = (1 - scale.z) / 2;
+            offset.x = (maxX + minX) / 2;
+            offset.y = (maxY + minY) / 2;
+            offset.z = (maxZ + minZ) / 2;
+
+            //offset.x = (1 - scale.x) / 2;
+            //offset.y = (1 - scale.y) / 2;
+            //offset.z = (1 - scale.z) / 2;
 
             scale *= objectScale;
             

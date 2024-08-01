@@ -30,7 +30,7 @@ class Uav : public GameObject, protected Rigidbody{
             return *this;
         }
 
-        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime, vector<GameObject> &gameObjects);
+        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime, vector<GameObject> &gameObjects, bool &destroyRequest);
         void onHit(const CollisionInfo &colInfo);
         glm::quat bankingTurn(float xAngle);
 
@@ -75,7 +75,7 @@ class Uav : public GameObject, protected Rigidbody{
 
 };
 
-void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime, vector<GameObject> &gameObjects){
+void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime, vector<GameObject> &gameObjects, bool &destroyRequest){
     float rotationVelocity = 50 * deltaTime;
     float xAngle = 0, yAngle = 0, zAngle = 0;
     if (q)
@@ -94,7 +94,9 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
     if(cruiseMod && !triggerLock){
         cruiseFlight = !cruiseFlight;
         triggerLock = true;
-    }else{
+    }
+
+    if(!cruiseMod){
         triggerLock = false;
     }
         
@@ -175,8 +177,13 @@ void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down
         collider->update(orientation);
         CollisionInfo colInfo;
         for(unsigned int i = 0; i < gameObjects.size(); i++){
-            if(hit(gameObjects[i], colInfo))
+            if(hit(gameObjects[i], colInfo)){
                 onHit(colInfo);
+                if(colInfo.type == SPEACIAL){
+                    destroyRequest = true;
+                    gameObjects[i].destroyed = true;
+                }
+            }
         }
         GameObject::position = collider->position;
         Rigidbody::position = GameObject::position;

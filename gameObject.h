@@ -22,6 +22,8 @@ class GameObject : public Mesh{
         float pitch = 0;
         float yaw = 0;
 
+        bool destroyed = false;
+
         Collider* collider = NULL;
         
         GameObject(){}
@@ -64,6 +66,8 @@ class GameObject : public Mesh{
         bool hit(const GameObject &other, CollisionInfo &collision);
 
         inline void addCollider(float* objectVertices, int size, ColliderType type = STATIC);
+
+        void destroy(){delete collider;}
 
     private:
         bool checkTotalBoundingBoxHit(const GameObject&other);

@@ -28,6 +28,7 @@ enum ShaderType{
 
 class Game{
     public:
+        bool destroyRequest = false;
 
         Game(){
             camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -83,7 +84,7 @@ void Game::start(){
 }
 
 void Game::update(GLFWwindow* window){
-    bool cT = false;
+    bool cT = true;
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -93,20 +94,39 @@ void Game::update(GLFWwindow* window){
     if(currentFrame - lastFpsTime > 1){
         lastFpsTime = currentFrame;
         cout << "FPS: " << fpsCounter << "\n";
-        player.printInfo();
         fpsCounter = 0;
+        if(!cT)
+            player.printInfo();
     }
 
     processInput(window, cT);
 
-    camera.Position.x = player.position.x;
-    camera.Position.y = player.position.y + 2;
-    camera.Position.z = player.position.z + 4;
-    camera.Front = glm::normalize(player.position - camera.Position);
+    if(!cT){
+        camera.Position.x = player.position.x;
+        camera.Position.y = player.position.y + 1;
+        camera.Position.z = player.position.z + 4;
+        camera.Front = glm::normalize(player.position - camera.Position);
+    }else{
+        camera.Position = colTest.position - 6.0f * colTest.front;
+        //camera.Position.x = colTest.position.x;
+        //camera.Position.y = colTest.position.y;
+        //camera.Position.z = colTest.position.z + 6;
+        //camera.Front = glm::normalize(colTest.position - camera.Position);
+        camera.Front = colTest.front;
+    }
 
-    /*camera.Position.x = colTest.position.x;
-    camera.Position.y = colTest.position.y;
-    camera.Position.z = colTest.position.z + 3;*/
+    if(destroyRequest){
+        std::vector<GameObject>::iterator it = gameObjects.begin();
+        while (it != gameObjects.end()){
+            if(it->destroyed){
+                it->destroy();
+                it = gameObjects.erase(it);
+            }
+            else
+                ++it;
+        }
+    }
+    destroyRequest = false;
 
     draw(cT);
     drawColliders(cT);
@@ -129,7 +149,7 @@ void Game::draw(bool cT){
     shaders[OBJECT].setVec3("viewPos", camera.Position);
     shaders[OBJECT].setFloat("material.shininess", 32.0f);
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
     glm::mat4 view = camera.GetViewMatrix();
 
     shaders[OBJECT].setMat4("projection", projection);
@@ -167,7 +187,7 @@ void Game::drawColliders(bool cT){
     glDisable(GL_DEPTH_TEST);
     shaders[COLLIDER].use();
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
     glm::mat4 view = camera.GetViewMatrix();
     shaders[COLLIDER].setMat4("projection", projection);
     shaders[COLLIDER].setMat4("view", view);
@@ -253,9 +273,9 @@ void Game::processInput(GLFWwindow *window, bool cT){
     }
 
     if(!cT)
-        player.processInput(q, e, right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime, gameObjects);
+        player.processInput(q, e, right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime, gameObjects, destroyRequest);
     else
-        colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime, gameObjects);
+        colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime, gameObjects, destroyRequest);
 }
 
 void Game::addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){

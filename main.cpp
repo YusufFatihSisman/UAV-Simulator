@@ -72,6 +72,160 @@ int main(){
     game.addShader(LIGHT, "lightVertex.GLSL", "lightFragment.GLSL");
     game.addShader(COLLIDER, "lineVertex.GLSL", "lineFragment.GLSL");
 
+    float targetVertices[] = {
+        // FRONT
+        // Left Top
+        -1.0f, 1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+        // Left Bot
+        -1.0f, -1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        // Left Top 2
+        -0.8f, 1.0f, 0.2f, 0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
+        // Left Bot 2
+        -0.8f, -1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+        // Right Top  
+        0.8f, 1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+        // Right Bot 
+        0.8f, -1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        // Right Top 2
+        1.0f, 1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        // Right Bot 2
+        1.0f, -1.0f, 0.2f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+
+        // BACK
+        // Left Top
+        -1.0f, 1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+        // Left Bot
+        -1.0f, -1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        // Left Top 2
+        -0.8f, 1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        // Left Bot 2
+        -0.8f, -1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+        // Right Top 
+        0.8f, 1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+        // Right Bot 
+        0.8f, -1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        // Right Top 2
+        1.0f, 1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        // Right Bot 2
+        1.0f, -1.0f, -0.2f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+
+        // LEFT
+        // Left Top
+        -1.0f, 1.0f, 0.2f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        // Left Bot
+        -1.0f, -1.0f, 0.2f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        // Left Top
+        -1.0f, 1.0f, -0.2f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        // Left Bot
+        -1.0f, -1.0f, -0.2f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        // Right Top 
+        0.8f, 1.0f, 0.2f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        // Right Bot 
+        0.8f, -1.0f, 0.2f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        // Right Top 
+        0.8f, 1.0f, -0.2f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        // Right Bot 
+        0.8f, -1.0f, -0.2f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+
+        //RIGHT
+        // Left Top 2
+        -0.8f, 1.0f, 0.2f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        // Left Bot 2
+        -0.8f, -1.0f, 0.2f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        // Left Top 2
+        -0.8f, 1.0f, -0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        // Left Bot 2
+        -0.8f, -1.0f, -0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        // Right Top 2
+        1.0f, 1.0f, 0.2f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        // Right Bot 2
+        1.0f, -1.0f, 0.2f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        // Right Top 2
+        1.0f, 1.0f, -0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        // Right Bot 2
+        1.0f, -1.0f, -0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+
+        //TOP
+        // Left Top
+        -1.0f, 1.0f, 0.2f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        // Left Top
+        -1.0f, 1.0f, -0.2f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        // Right Top 2
+        1.0f, 1.0f, 0.2f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        // Right Top 2
+        1.0f, 1.0f, -0.2f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 
+        // Left Bot
+        -1.0f, -1.0f, 0.2f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        // Left Bot
+        -1.0f, -1.0f, -0.2f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        // Right Bot 2
+        1.0f, -1.0f, 0.2f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        // Right Bot 2
+        1.0f, -1.0f, -0.2f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 
+
+        //BOT
+        // Left Bot
+        -1.0f, -1.0f, 0.2f, 0.0f, -1.0f, 0.0f, 0.0f,  1.0f,
+        // Left Bot
+        -1.0f, -1.0f, -0.2f, 0.0f, -1.0f, 0.0f, 1.0f,  1.0f,
+        // Right Bot 2
+        1.0f, -1.0f, 0.2f, 0.0f, -1.0f, 0.0f, 1.0f,  0.0f,
+        // Right Bot 2
+        1.0f, -1.0f, -0.2f, 0.0f, -1.0f, 0.0f, 0.0f,  0.0f,
+        // Left Top
+        -1.0f, 1.0f, 0.2f, 0.0f, -1.0f, 0.0f, 0.0f,  1.0f,
+        // Left Top
+        -1.0f, 1.0f, -0.2f, 0.0f, -1.0f, 0.0f, 1.0f,  1.0f,
+        // Right Top 2
+        1.0f, 1.0f, 0.2f, 0.0f, -1.0f, 0.0f, 1.0f,  0.0f,
+        // Right Top 2
+        1.0f, 1.0f, -0.2f, 0.0f, -1.0f, 0.0f, 0.0f,  0.0f
+    };
+
+    unsigned int targetIndices[] = {
+        //FRONT
+        0, 1, 2,
+        1, 2, 3,
+
+        4, 5, 6,
+        5, 6, 7,
+
+        // BACK
+        8, 9, 10,
+        9, 10, 11,
+
+        12, 13, 14,
+        13, 14, 15,
+
+        // LEFT
+        16, 17, 18,
+        17, 18, 19,
+
+        20, 21, 22,
+        21, 22, 23,
+
+        // RIGHT
+        24, 25, 26,
+        25, 26, 27,
+
+        28, 29, 30,
+        29, 30, 31,
+
+        // TOP
+        32, 33, 34,
+        33, 34, 35,
+
+        36, 37, 38,
+        37, 38, 39,
+
+        // BOT
+        40, 41, 42,
+        41, 42, 43,
+
+        44, 45, 46,
+        45, 46, 47
+    };
+
     // left bot --- right bot --- top right --- top left
     float vertices[] = {
         // arka
@@ -199,6 +353,21 @@ int main(){
         indiceVector.push_back(indices[i]);
     }
 
+    vector<Vertex> targetVertexVector;
+    vector<unsigned int> targetIndiceVector;
+
+    for(int i = 0; i < sizeof(targetVertices)/sizeof(float); i+=8){
+        Vertex v;
+        v.Position = glm::vec3(targetVertices[i], targetVertices[i+1], targetVertices[i+2]);
+        v.Normal = glm::vec3(targetVertices[i+3], targetVertices[i+4], targetVertices[i+5]);
+        v.TexCoords = glm::vec2(targetVertices[i+6], targetVertices[i+7]);
+        targetVertexVector.push_back(v);
+    }
+
+    for(int i = 0; i < sizeof(targetIndices)/sizeof(unsigned int); i++){
+        targetIndiceVector.push_back(targetIndices[i]);
+    }
+
     unsigned int diffuseMap = loadTexture("container.png");
     unsigned int specularMap = loadTexture("container_specular.png");
 
@@ -210,6 +379,7 @@ int main(){
     vector<GameObject> gameObjects;
     Mesh mesh(verticeVector, indiceVector, textureVector);
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
+    Mesh mesh3(targetVertexVector, targetIndiceVector, textureVector);
 
     Uav player(mesh2, glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f),  40);
     //game.addPlayer(mesh2, objectVertices, sizeof(objectVertices)/sizeof(float), glm::vec3(0.0f, 0.0f, 0.0f), DYNAMIC);
@@ -219,7 +389,7 @@ int main(){
 
     for(int i = 1; i < 10; i++){
         if(i == 1){
-            game.addObject(GameObject(mesh, glm::vec3(200.0f, 1.0f, 4000.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), GROUND);
+            game.addObject(GameObject(mesh, glm::vec3(200.0f, 1.0f, 6000.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), GROUND);
             continue;
         }
         else if(i == 2){
@@ -229,6 +399,8 @@ int main(){
         float angle = 20.0f * i;
         game.addObject(GameObject(mesh, glm::vec3(1.0f, 1.0f, 1.0f), cubePositions[i], glm::vec3(angle, angle*0.3f, angle*0.5f)), vertices, sizeof(vertices)/sizeof(float), STATIC);
     }
+
+    game.addObject(GameObject(mesh3, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 4.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float), SPEACIAL);
 
     float timer = glfwGetTime();
     glEnable(GL_DEPTH_TEST);

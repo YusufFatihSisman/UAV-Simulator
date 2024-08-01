@@ -24,12 +24,12 @@ class ColliderTest : public GameObject{
             return *this;
         }
 
-        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime, vector<GameObject> &gameObjects);
+        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime, vector<GameObject> &gameObjects, bool &destroyRequest);
 
         void onHit(CollisionInfo col);
 };
 
-void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime, vector<GameObject> &gameObjects){
+void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime, vector<GameObject> &gameObjects, bool &destroyRequest){
     float rollVelocity = 50 * deltaTime;
     float xAngle = 0, yAngle = 0, zAngle = 0;
     if (q)
@@ -49,16 +49,22 @@ void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, 
         rotate(xAngle, yAngle, zAngle);
     
     if(speedUp)
-        GameObject::position += 5 * deltaTime * GameObject::front;
+        collider->position += 5 * deltaTime * GameObject::front;
 
     if(collider != NULL){
-        collider->set(position, GameObject::front, GameObject::up, GameObject::right);
+        collider->set(collider->position, GameObject::front, GameObject::up, GameObject::right);
         collider->update(orientation);
         CollisionInfo colInfo;
         for(unsigned int i = 0; i < gameObjects.size(); i++){
-            if(hit(gameObjects[i], colInfo))
+            if(hit(gameObjects[i], colInfo)){
                 onHit(colInfo);
+                if(colInfo.type == SPEACIAL){
+                    destroyRequest = true;
+                    gameObjects[i].destroyed = true;
+                }
+            }       
         }
+        GameObject::position = collider->position;
     }
 }
 
