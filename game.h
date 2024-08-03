@@ -26,37 +26,50 @@ enum ShaderType{
     SHADER_MAX
 };
 
+struct ColState{
+    CollisionInfo info;
+    glm::vec3 position;
+    unsigned int index;
+};
+
+
 class Game{
     public:
-        bool destroyRequest = false;
-
         Game(){
             camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
         }
 
         void start();
         void update(GLFWwindow* window);
-        bool checkCollision(GameObject object, CollisionInfo &colInfo);
-        void draw(bool cT = false);
-        void drawColliders(bool cT = false);
+        void draw();
+        void drawColliders();
 
-        void processInput(GLFWwindow *window, bool cT = false);
+        void processInput(GLFWwindow *window);
+        void checkCollisions();
 
         void addShader(ShaderType shaderType, const char* vertexPath, const char* fragmentPath);
         void addPlayer(const Uav &player, float* objectVertices, int size, ColliderType type = DYNAMIC);
         void addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC);
         void addObject(const GameObject &object, float* objectVertices, int size, ColliderType type = STATIC);
+        void addTarget(const GameObject &object, float* objectVertices, int size);
         void addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
             glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f));
 
     private:
+        bool cT = false;
+
         Camera camera;
         Uav player;
         ColliderTest colTest;
         vector<GameObject> gameObjects;
+        vector<GameObject> targets;
         CustomShader shaders[SHADER_MAX];
         float deltaTime = 0.0f;
         float lastFrame = 0.0f;
+        ColState* colInfos;
+
+        bool destroyRequest = false;
+        unsigned int firstTargetIndex = -1;
 
         const unsigned int SCR_WIDTH = 800;
         const unsigned int SCR_HEIGHT = 600;
@@ -81,10 +94,10 @@ void Game::start(){
     shaders[OBJECT].setPointLight(2, pointLightPositions[2], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
     shaders[OBJECT].setPointLight(3, pointLightPositions[3], glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, 0.09f, 0.032f);
 
+    colInfos = new ColState[gameObjects.size()];
 }
 
 void Game::update(GLFWwindow* window){
-    bool cT = true;
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -95,17 +108,28 @@ void Game::update(GLFWwindow* window){
         lastFpsTime = currentFrame;
         cout << "FPS: " << fpsCounter << "\n";
         fpsCounter = 0;
-        if(!cT)
-            player.printInfo();
+        //if(!cT)
+            //player.printInfo();
     }
 
-    processInput(window, cT);
+    processInput(window);
+    checkCollisions();
 
     if(!cT){
-        camera.Position.x = player.position.x;
+        /*camera.Position.x = player.position.x;
         camera.Position.y = player.position.y + 1;
         camera.Position.z = player.position.z + 4;
-        camera.Front = glm::normalize(player.position - camera.Position);
+        camera.Front = glm::normalize(player.position - camera.Position);*/
+        camera.Front.x = player.GameObject::front.x;
+        camera.Front.z = player.GameObject::front.z;
+        camera.Front = glm::normalize(camera.Front);
+        camera.Position = player.position - 6.0f * camera.Front;
+        /*camera.Position.x = player.position.x - 6.0f * player.GameObject::front.x;
+        camera.Position.z = player.position.z - 6.0f * player.GameObject::front.z;
+        camera.Position.y = player.position.y;
+        camera.Front.x = player.GameObject::front.x;
+        camera.Front.z = player.GameObject::front.z;
+        camera.Front = glm::normalize(camera.Front);*/
     }else{
         camera.Position = colTest.position - 6.0f * colTest.front;
         //camera.Position.x = colTest.position.x;
@@ -115,32 +139,19 @@ void Game::update(GLFWwindow* window){
         camera.Front = colTest.front;
     }
 
-    if(destroyRequest){
-        std::vector<GameObject>::iterator it = gameObjects.begin();
-        while (it != gameObjects.end()){
-            if(it->destroyed){
-                it->destroy();
-                it = gameObjects.erase(it);
-            }
-            else
-                ++it;
+    /*if(destroyRequest){
+        for(int i = targets.size() - 1; i >= 0; i--){
+            if(targets[i].isDestroyed)
+                targets[i].destroy();
         }
     }
-    destroyRequest = false;
+    destroyRequest = false;*/
 
-    draw(cT);
-    drawColliders(cT);
+    draw();
+    drawColliders();
 }
 
-bool Game::checkCollision(GameObject object, CollisionInfo &colInfo){
-    for(unsigned int i = 0; i < gameObjects.size(); i++){
-        if(object.hit(gameObjects[i], colInfo))
-            return true;  
-    }
-    return false;
-}
-
-void Game::draw(bool cT){
+void Game::draw(){
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -170,20 +181,54 @@ void Game::draw(bool cT){
         shaders[OBJECT].setMat4("model", model);
         colTest.draw(shaders[OBJECT]);
     }
-    
-    
-    
-    for(unsigned int i = 0; i < gameObjects.size(); i++){
+
+    int objectSize = firstTargetIndex == -1 ? gameObjects.size() : firstTargetIndex;
+    for(unsigned int i = 0; i < objectSize; i++){
+        if(gameObjects[i].isDestroyed)
+            continue;
         model = glm::mat4(1.0f);
         model = glm::translate(model, gameObjects[i].position);
         model = model * gameObjects[i].getRotationMatrix();
         model = glm::scale(model, gameObjects[i].scale);
         shaders[OBJECT].setMat4("model", model);
         gameObjects[i].draw(shaders[OBJECT]);
+        
     }
+
+    shaders[LIGHT].use();
+    shaders[LIGHT].setVec3("viewPos", camera.Position);
+    shaders[LIGHT].setMat4("projection", projection);
+    shaders[LIGHT].setMat4("view", view);
+    for(unsigned int i = objectSize; i < gameObjects.size(); i++){
+        if(gameObjects[i].isDestroyed)
+            continue;
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, gameObjects[i].position);
+        model = model * gameObjects[i].getRotationMatrix();
+        model = glm::scale(model, gameObjects[i].scale * glm::vec3(1.1f, 1.1f, 2.0f));
+        shaders[LIGHT].setMat4("model", model);
+        gameObjects[i].draw(shaders[LIGHT]);
+    }
+    /*
+    shaders[LIGHT].use();
+    shaders[LIGHT].setVec3("viewPos", camera.Position);
+    shaders[LIGHT].setMat4("projection", projection);
+    shaders[LIGHT].setMat4("view", view);
+
+    for(unsigned int i = 0; i < targets.size(); i++){
+        if(targets[i].isDestroyed)
+            continue;
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, targets[i].position);
+        model = model * targets[i].getRotationMatrix();
+        model = glm::scale(model, targets[i].scale * glm::vec3(1.2f, 1.2f, 2.0f));
+        shaders[LIGHT].setMat4("model", model);
+        targets[i].draw(shaders[LIGHT]);
+    }
+    */
 }
 
-void Game::drawColliders(bool cT){
+void Game::drawColliders(){
     glDisable(GL_DEPTH_TEST);
     shaders[COLLIDER].use();
 
@@ -195,37 +240,55 @@ void Game::drawColliders(bool cT){
     glm::mat4 model = glm::mat4(1.0f);
     
     if(!cT){
-        model = glm::translate(model, player.position);
+        model = glm::translate(model, player.collider->position);
         model = model * player.getRotationMatrix();
         shaders[COLLIDER].setMat4("model", model);
         player.collider->draw(shaders[COLLIDER]);
     }else{
-        model = glm::translate(model, colTest.position);
+        model = glm::translate(model, colTest.collider->position);
         model = model * colTest.getRotationMatrix();
         shaders[COLLIDER].setMat4("model", model);
         colTest.collider->draw(shaders[COLLIDER]);
     }
     
     for (unsigned int i = 0; i < gameObjects.size(); i++){
+        if(gameObjects[i].isDestroyed)
+            continue;
         model = glm::mat4(1.0f);
-        model = glm::translate(model, gameObjects[i].position);
+        model = glm::translate(model, gameObjects[i].collider->position);
         model = model * gameObjects[i].getRotationMatrix();
         shaders[COLLIDER].setMat4("model", model);            
         gameObjects[i].collider->draw(shaders[COLLIDER]);
     }
+    /*
+    for(unsigned int i = 0; i < targets.size(); i++){
+        if(targets[i].isDestroyed)
+            continue;
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, targets[i].position);
+        model = model * targets[i].getRotationMatrix();
+        shaders[COLLIDER].setMat4("model", model);
+        targets[i].collider->draw(shaders[LIGHT]);
+    }
+    */
 
     glEnable(GL_DEPTH_TEST);
 }
 
-void Game::processInput(GLFWwindow *window, bool cT){
+void Game::processInput(GLFWwindow *window){
     bool q = false, e = false, right = false, left = false, up = false, down = false, speedUp = false, slowDown = false, cruiseMod = false;
     
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
         camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        up = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
         camera.ProcessKeyboard(BACKWARD, deltaTime);
+        down = true;
+    }
+        
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
@@ -254,12 +317,10 @@ void Game::processInput(GLFWwindow *window, bool cT){
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
         camera.ProcessKeyboard(PITCH_UP, deltaTime);
-        up = true;
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         camera.ProcessKeyboard(PITCH_DOWN, deltaTime);
-        down = true;
     }
 
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
@@ -273,9 +334,99 @@ void Game::processInput(GLFWwindow *window, bool cT){
     }
 
     if(!cT)
-        player.processInput(q, e, right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime, gameObjects, destroyRequest);
+        player.processInput(q, e, right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime);
     else
-        colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime, gameObjects, destroyRequest);
+        colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime);
+}
+
+void Game::checkCollisions(){
+    CollisionInfo colInfo;
+    int colSize = 0;
+    if(cT){
+        if(colTest.collider != NULL && colTest.isMoved){
+            glm::vec3 finalPos = colTest.collider->position;
+            for(unsigned int i = 0; i < gameObjects.size(); i++){
+                if(gameObjects[i].isDestroyed)
+                    continue;
+                colTest.collider->set(finalPos, colTest.GameObject::front, colTest.GameObject::up, colTest.GameObject::right);
+                colTest.collider->update(colTest.orientation);
+                if(colTest.hit(gameObjects[i], colInfo)){
+                    ColState currentColState{colInfo, colTest.collider->position, i};
+                    for(unsigned int j = 0; j < colSize; j++){
+                        if(glm::length(colTest.position - currentColState.info.pointOnPlane) < glm::length(colTest.position - colInfos[j].info.pointOnPlane)){
+                            ColState tempCol = colInfos[j];
+
+                            colInfos[j] = currentColState;
+                            currentColState = tempCol;
+                        }
+                    }
+                    colInfos[colSize] = currentColState;
+                    colSize++;
+                }       
+            }
+            for(unsigned int i = 0; i < colSize; i++){
+                colTest.collider->position = colInfos[i].position;
+                colTest.collider->onHit(colInfos[i].info);
+                if(colInfos[i].info.type == STATIC){
+                    finalPos = colTest.collider->position;
+                }
+                else if(colInfos[i].info.type == GROUND){
+                    finalPos = player.collider->position;
+                }
+                else if(colInfos[i].info.type == SPEACIAL){
+                    std::cout << "SPEACIAL HIT\n";
+                    destroyRequest = true;
+                    gameObjects[colInfos[i].index].isDestroyed = true;
+                }
+            }
+            colTest.GameObject::position = finalPos;
+            colTest.collider->position = colTest.GameObject::position;
+            colTest.collider->update(colTest.orientation);
+            colTest.isMoved = false;
+        }
+        return;
+    }
+    if(player.collider != NULL && player.isMoved){
+        for(unsigned int i = 0; i < gameObjects.size(); i++){
+            if(gameObjects[i].isDestroyed)
+                continue;
+            player.collider->set(player.Rigidbody::position, player.GameObject::front, player.GameObject::up, player.GameObject::right);
+            player.collider->update(player.orientation);
+
+            if(player.hit(gameObjects[i], colInfo)){
+                ColState currentColState{colInfo, player.collider->position, i};
+                for(unsigned int j = 0; j < colSize; j++){
+                    if(glm::length(player.position - currentColState.info.pointOnPlane) < glm::length(player.position - colInfos[j].info.pointOnPlane)){
+                        ColState tempCol = colInfos[j];
+
+                        colInfos[j] = currentColState;
+                        currentColState = tempCol;
+                    }
+                }
+                colInfos[colSize] = currentColState;
+                colSize++;
+            }
+        }
+        for(unsigned int i = 0; i < colSize; i++){
+            player.onHit(colInfos[i].info);
+            player.collider->position = colInfos[i].position;
+            player.collider->onHit(colInfos[i].info);
+            if(colInfos[i].info.type == STATIC){
+                player.Rigidbody::position = player.collider->position;
+            }
+            else if(colInfos[i].info.type == GROUND){
+                player.Rigidbody::position = player.collider->position;
+            }
+            else if(colInfos[i].info.type == SPEACIAL){
+                destroyRequest = true;
+                gameObjects[colInfos[i].index].isDestroyed = true;
+            }
+        }
+        player.GameObject::position = player.Rigidbody::position;
+        player.collider->position = player.GameObject::position;
+        player.collider->update(player.orientation);
+        player.isMoved = false;
+    }
 }
 
 void Game::addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){
@@ -294,7 +445,20 @@ void Game::addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec
     this->player.collider->update(player.orientation);
 }
 
+void Game::addTarget(const GameObject &object, float* objectVertices, int size){
+    if(firstTargetIndex == -1)
+        firstTargetIndex = gameObjects.size();
+    gameObjects.push_back(object);
+    gameObjects[gameObjects.size()-1].addCollider(objectVertices, size, SPEACIAL);
+    gameObjects[gameObjects.size()-1].collider->update(gameObjects[gameObjects.size()-1].orientation);
+    /*targets.push_back(object);
+    targets[targets.size()-1].addCollider(objectVertices, size, SPEACIAL);
+    targets[targets.size()-1].collider->update(targets[targets.size()-1].orientation);*/
+}
+
 void Game::addObject(const GameObject &object, float* objectVertices, int size, ColliderType type){
+    if(firstTargetIndex != -1)
+        return;
     gameObjects.push_back(object);
     gameObjects[gameObjects.size()-1].addCollider(objectVertices, size, type);
     gameObjects[gameObjects.size()-1].collider->update(gameObjects[gameObjects.size()-1].orientation);

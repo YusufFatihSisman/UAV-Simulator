@@ -8,11 +8,12 @@
 class ColliderTest : public GameObject{
 
     public:
+        float speed = 200.0f;
 
         ColliderTest(){}
 
         ColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
-        glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)) 
+        glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)) 
         : GameObject(mesh, objectScale, position, rotation){
             addCollider(objectVertices, size, DYNAMIC);
         }
@@ -24,12 +25,12 @@ class ColliderTest : public GameObject{
             return *this;
         }
 
-        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime, vector<GameObject> &gameObjects, bool &destroyRequest);
+        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime);
 
         void onHit(CollisionInfo col);
 };
 
-void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime, vector<GameObject> &gameObjects, bool &destroyRequest){
+void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, float deltaTime){
     float rollVelocity = 50 * deltaTime;
     float xAngle = 0, yAngle = 0, zAngle = 0;
     if (q)
@@ -45,26 +46,14 @@ void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, 
     if (up)
         yAngle = rollVelocity;
     
-    if(q || e || right || left || up || down)
+    if(q || e || right || left || up || down){
         rotate(xAngle, yAngle, zAngle);
+        isMoved = true;
+    }
     
-    if(speedUp)
-        collider->position += 5 * deltaTime * GameObject::front;
-
-    if(collider != NULL){
-        collider->set(collider->position, GameObject::front, GameObject::up, GameObject::right);
-        collider->update(orientation);
-        CollisionInfo colInfo;
-        for(unsigned int i = 0; i < gameObjects.size(); i++){
-            if(hit(gameObjects[i], colInfo)){
-                onHit(colInfo);
-                if(colInfo.type == SPEACIAL){
-                    destroyRequest = true;
-                    gameObjects[i].destroyed = true;
-                }
-            }       
-        }
-        GameObject::position = collider->position;
+    if(speedUp){
+        collider->position += speed * deltaTime * GameObject::front;
+        isMoved = true;
     }
 }
 

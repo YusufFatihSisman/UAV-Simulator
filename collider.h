@@ -39,6 +39,7 @@ class Collider{
         glm::vec3 minAABB;
         glm::vec3 maxAABB;
 
+        ColliderType type;
 
         Collider(float* objectVertices, int size, ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)){ 
             this->type = type;
@@ -118,7 +119,7 @@ class Collider{
     private:
         unsigned int VAO, VBO, EBO;
         static const float lineVertices[];
-        ColliderType type;
+        
         
         bool checkCollisionAxis(const Collider &other, glm::vec3 axis, CollisionInfo &colInfo);
         void setupCollider();

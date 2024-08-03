@@ -22,7 +22,8 @@ class GameObject : public Mesh{
         float pitch = 0;
         float yaw = 0;
 
-        bool destroyed = false;
+        bool isDestroyed = false;
+        bool isMoved = false;
 
         Collider* collider = NULL;
         
@@ -86,12 +87,18 @@ bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
     collider->position = position;
     collider->update(orientation);
 
+    bool groundHit = false;
+    glm::vec3 groundPos;
     while(glm::length(position - collider->position) < glm::length(position - endPos)){
         if(collider->hit(*(other.collider), collision)){
-            collider->onHit(collision);
-            this->position = collider->position;
-            if(collision.type == STATIC)
-                return true;
+            if(collision.type == SPEACIAL){
+                return true;   
+            }
+            else{
+                collider->onHit(collision);
+                groundHit = true;
+                groundPos = collider->position;
+            }
         }
         collider->position += dir * collider->scale;
         collider->update(orientation);
@@ -99,9 +106,12 @@ bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
 
     collider->position = endPos;
     collider->update(orientation);
-    if(collider->hit(*(other.collider), collision)){
-        collider->onHit(collision);
-        this->position = collider->position;
+    if(collider->hit(*(other.collider), collision))
+        return true;
+
+    if(groundHit){
+        collider->position = groundPos;
+        collider->update(orientation);
         return true;
     }
     

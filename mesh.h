@@ -30,6 +30,12 @@ class Mesh{
 
         Mesh(){}
 
+        Mesh(vector<Vertex> vertices, vector<unsigned int> indices){
+            this->vertices = vertices;
+            this->indices = indices;
+            setupMesh();
+        }
+
         Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures){
             this->vertices = vertices;
             this->indices = indices;
@@ -89,7 +95,7 @@ void Mesh::draw(Shader &shader){
         shader.setInt(("material." + name + number).c_str(), i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
-    glActiveTexture(GL_TEXTURE0);
+    //glActiveTexture(GL_TEXTURE0);
 
     // draw mesh
     glBindVertexArray(VAO);
@@ -114,13 +120,15 @@ void Mesh::setupMesh(){
     // vertex positions
     glEnableVertexAttribArray(0);	
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-    // vertex normals
-    glEnableVertexAttribArray(1);	
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-    // vertex texture coords
-    glEnableVertexAttribArray(2);	
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
+    if(textures.size() != 0){
+        // vertex normals
+        glEnableVertexAttribArray(1);	
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+        // vertex texture coords
+        glEnableVertexAttribArray(2);	
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+    }
     glBindVertexArray(0);
 }
 

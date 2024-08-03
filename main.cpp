@@ -379,7 +379,8 @@ int main(){
     vector<GameObject> gameObjects;
     Mesh mesh(verticeVector, indiceVector, textureVector);
     Mesh mesh2(objectVertexVector, objectIndiceVector, textureVector);
-    Mesh mesh3(targetVertexVector, targetIndiceVector, textureVector);
+
+    Mesh mesh3(targetVertexVector, targetIndiceVector);
 
     Uav player(mesh2, glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f),  40);
     //game.addPlayer(mesh2, objectVertices, sizeof(objectVertices)/sizeof(float), glm::vec3(0.0f, 0.0f, 0.0f), DYNAMIC);
@@ -389,7 +390,7 @@ int main(){
 
     for(int i = 1; i < 10; i++){
         if(i == 1){
-            game.addObject(GameObject(mesh, glm::vec3(200.0f, 1.0f, 6000.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), GROUND);
+            game.addObject(GameObject(mesh, glm::vec3(6000.0f, 1.0f, 6000.0f), glm::vec3(0.0f, -2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f)),vertices, sizeof(vertices)/sizeof(float), GROUND);
             continue;
         }
         else if(i == 2){
@@ -400,7 +401,18 @@ int main(){
         game.addObject(GameObject(mesh, glm::vec3(1.0f, 1.0f, 1.0f), cubePositions[i], glm::vec3(angle, angle*0.3f, angle*0.5f)), vertices, sizeof(vertices)/sizeof(float), STATIC);
     }
 
-    game.addObject(GameObject(mesh3, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 4.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float), SPEACIAL);
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(0.0f, 80.0f, -200.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(50.0f, 80.0f, -400.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(100.0f, 80.0f, -600.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(150.0f, 80.0f, -800.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(200.0f, 80.0f, -1000.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(21.0f, 80.0f, -4000.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(21.0f, 80.0f, -4400.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(21.0f, 80.0f, -4800.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(21.0f, 80.0f, -4900.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+    game.addTarget(GameObject(mesh3, glm::vec3(40.0f, 40.0f, 5.0f), glm::vec3(21.0f, 80.0f, -6000.0f), glm::vec3(0.0f, 0.0f, 0.0f)), targetVertices, sizeof(targetVertices)/sizeof(float));
+
 
     float timer = glfwGetTime();
     glEnable(GL_DEPTH_TEST);
