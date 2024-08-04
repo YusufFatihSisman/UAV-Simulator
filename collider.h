@@ -312,14 +312,6 @@ void Collider::onHit(const CollisionInfo& col){
         return;
 
     position += col.normal * col.penetration;
-    /*
-    glm::vec3 normalMag = col.normal * col.penetration;
-    if(glm::length((position + normalMag) - col.pointOnPlane) > glm::length(position- col.pointOnPlane)){
-        position += normalMag;
-    }else{
-        position -= normalMag;
-    }
-    */
 }
 
 void Collider::draw(Shader &shader){

@@ -57,8 +57,4 @@ void ColliderTest::processInput(bool q, bool e, bool right, bool left, bool up, 
     }
 }
 
-void ColliderTest::onHit(CollisionInfo col){
-    
-}
-
 #endif

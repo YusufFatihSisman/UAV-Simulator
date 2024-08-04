@@ -39,14 +39,25 @@ class Game{
             camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
         }
 
+        ~Game(){
+            delete colInfos;
+
+            for(int i = 0; i < SHADER_MAX; i++){
+                shaders[i].terminate();
+            }
+            for(int i = 0; i < gameObjects.size(); i++){
+                if(!gameObjects[i].isDestroyed)
+                    gameObjects[i].destroy();
+            }
+
+            player.destroy();
+            colTest.destroy();
+
+        }
+
         void start();
         void update(GLFWwindow* window);
-        void draw();
-        void drawColliders();
-
-        void processInput(GLFWwindow *window);
-        void checkCollisions();
-
+        
         void addShader(ShaderType shaderType, const char* vertexPath, const char* fragmentPath);
         void addPlayer(const Uav &player, float* objectVertices, int size, ColliderType type = DYNAMIC);
         void addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC);
@@ -56,13 +67,18 @@ class Game{
             glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f));
 
     private:
+        void draw();
+        void drawColliders();
+
+        void processInput(GLFWwindow *window);
+        void checkCollisions();
+
         bool cT = false;
 
         Camera camera;
         Uav player;
         ColliderTest colTest;
         vector<GameObject> gameObjects;
-        vector<GameObject> targets;
         CustomShader shaders[SHADER_MAX];
         float deltaTime = 0.0f;
         float lastFrame = 0.0f;
@@ -108,44 +124,22 @@ void Game::update(GLFWwindow* window){
         lastFpsTime = currentFrame;
         cout << "FPS: " << fpsCounter << "\n";
         fpsCounter = 0;
-        //if(!cT)
-            //player.printInfo();
+        if(!cT)
+            player.printInfo();
     }
 
     processInput(window);
     checkCollisions();
 
     if(!cT){
-        /*camera.Position.x = player.position.x;
-        camera.Position.y = player.position.y + 1;
-        camera.Position.z = player.position.z + 4;
-        camera.Front = glm::normalize(player.position - camera.Position);*/
         camera.Front.x = player.GameObject::front.x;
         camera.Front.z = player.GameObject::front.z;
         camera.Front = glm::normalize(camera.Front);
         camera.Position = player.position - 6.0f * camera.Front;
-        /*camera.Position.x = player.position.x - 6.0f * player.GameObject::front.x;
-        camera.Position.z = player.position.z - 6.0f * player.GameObject::front.z;
-        camera.Position.y = player.position.y;
-        camera.Front.x = player.GameObject::front.x;
-        camera.Front.z = player.GameObject::front.z;
-        camera.Front = glm::normalize(camera.Front);*/
     }else{
         camera.Position = colTest.position - 6.0f * colTest.front;
-        //camera.Position.x = colTest.position.x;
-        //camera.Position.y = colTest.position.y;
-        //camera.Position.z = colTest.position.z + 6;
-        //camera.Front = glm::normalize(colTest.position - camera.Position);
         camera.Front = colTest.front;
     }
-
-    /*if(destroyRequest){
-        for(int i = targets.size() - 1; i >= 0; i--){
-            if(targets[i].isDestroyed)
-                targets[i].destroy();
-        }
-    }
-    destroyRequest = false;*/
 
     draw();
     drawColliders();
@@ -169,7 +163,6 @@ void Game::draw(){
     glm::mat4 model = glm::mat4(1.0f);
     
     if(!cT){
-        //player.printInfo();
         model = glm::translate(model, player.position);
         model = model * player.getRotationMatrix();
         model = glm::scale(model, player.scale);
@@ -289,10 +282,16 @@ void Game::processInput(GLFWwindow *window){
         down = true;
     }
         
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
         camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        left = true;
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
         camera.ProcessKeyboard(RIGHT, deltaTime);
+        right = true;
+    }
+        
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     {
@@ -304,15 +303,14 @@ void Game::processInput(GLFWwindow *window){
         camera.ProcessKeyboard(ROLL_RIGHT, deltaTime);
         e = true;
     }
+
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
         camera.ProcessKeyboard(YAW_RIGHT, deltaTime);
-        right = true;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
     {
         camera.ProcessKeyboard(YAW_LEFT, deltaTime);
-        left = true;
     }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
@@ -334,7 +332,7 @@ void Game::processInput(GLFWwindow *window){
     }
 
     if(!cT)
-        player.processInput(q, e, right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime);
+        player.processInput(right, left, up, down, speedUp, slowDown, cruiseMod, deltaTime);
     else
         colTest.processInput(q, e, right, left, up, down, speedUp, deltaTime);
 }
@@ -371,12 +369,13 @@ void Game::checkCollisions(){
                     finalPos = colTest.collider->position;
                 }
                 else if(colInfos[i].info.type == GROUND){
-                    finalPos = player.collider->position;
+                    finalPos = colTest.collider->position;
                 }
                 else if(colInfos[i].info.type == SPEACIAL){
                     std::cout << "SPEACIAL HIT\n";
                     destroyRequest = true;
                     gameObjects[colInfos[i].index].isDestroyed = true;
+                    gameObjects[colInfos[i].index].destroy();
                 }
             }
             colTest.GameObject::position = finalPos;
@@ -420,6 +419,7 @@ void Game::checkCollisions(){
             else if(colInfos[i].info.type == SPEACIAL){
                 destroyRequest = true;
                 gameObjects[colInfos[i].index].isDestroyed = true;
+                gameObjects[colInfos[i].index].destroy();
             }
         }
         player.GameObject::position = player.Rigidbody::position;

@@ -31,7 +31,7 @@ class Uav : public GameObject, public Rigidbody{
             return *this;
         }
 
-        void processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime);
+        void processInput(bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime);
         void onHit(const CollisionInfo &colInfo);
         glm::quat bankingTurn(float xAngle);
 
@@ -73,14 +73,14 @@ class Uav : public GameObject, public Rigidbody{
 
 };
 
-void Uav::processInput(bool q, bool e, bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime){
+void Uav::processInput(bool right, bool left, bool up, bool down, bool speedUp, bool slowDown, bool cruiseMod, float deltaTime){
     float rotationVelocity = 50 * deltaTime;
     float xAngle = 0, yAngle = 0, zAngle = 0;
-    if (q)
+    if (left)
         zAngle = (roll > -30) ? -rotationVelocity : 0;
-    if (e)
+    if (right)
         zAngle = (roll < 30) ? rotationVelocity : 0;
-    if(!q && !e){
+    if(!left && !right){
         if(roll < 1 && roll > -1)
             rotationVelocity = abs(roll);
         if(roll > 0)

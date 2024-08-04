@@ -68,7 +68,7 @@ class GameObject : public Mesh{
 
         inline void addCollider(float* objectVertices, int size, ColliderType type = STATIC);
 
-        void destroy(){delete collider;}
+        void destroy();
 
     private:
         bool checkTotalBoundingBoxHit(const GameObject&other);
@@ -89,15 +89,24 @@ bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
 
     bool groundHit = false;
     glm::vec3 groundPos;
+    glm::vec3 collNormal;
     while(glm::length(position - collider->position) < glm::length(position - endPos)){
         if(collider->hit(*(other.collider), collision)){
             if(collision.type == SPEACIAL){
                 return true;   
             }
             else{
+                if(groundHit){
+                    if(collNormal != collision.normal){
+                        collider->position = groundPos;
+                        collider->update(orientation);
+                        return true;
+                    }
+                }
                 collider->onHit(collision);
                 groundHit = true;
                 groundPos = collider->position;
+                collNormal = collision.normal;
             }
         }
         collider->position += dir * collider->scale;
@@ -116,30 +125,6 @@ bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
     }
     
     return false;
-}
-
-bool GameObject::checkTotalBoundingBoxHit(const GameObject&other){
-    glm::vec3 endPos = collider->position;
-    glm::vec3 endMinAABB = collider->minAABB;
-    glm::vec3 endMaxAABB = collider->maxAABB;
-    collider->position = position;
-    collider->update(orientation);
-    glm::vec3 firstMinAABB = collider->minAABB;
-    glm::vec3 firstMaxAABB = collider->maxAABB;
-
-    collider->minAABB.x = firstMinAABB.x < endMinAABB.x ? firstMinAABB.x : endMinAABB.x;
-    collider->minAABB.y = firstMinAABB.y < endMinAABB.y ? firstMinAABB.y : endMinAABB.y;
-    collider->minAABB.z = firstMinAABB.z < endMinAABB.z ? firstMinAABB.z : endMinAABB.z;
-
-    collider->maxAABB.x = firstMaxAABB.x > endMaxAABB.x ? firstMaxAABB.x : endMaxAABB.x;
-    collider->maxAABB.y = firstMaxAABB.y > endMaxAABB.y ? firstMaxAABB.y : endMaxAABB.y;
-    collider->maxAABB.z = firstMaxAABB.z > endMaxAABB.z ? firstMaxAABB.z : endMaxAABB.z;
-
-    if(!collider->checkBoundingBoxAlignedAxis(*(other.collider))){
-        collider->position = endPos;
-        return false;
-    }
-    return true;
 }
 
 inline void GameObject::addCollider(float* objectVertices, int size, ColliderType type){
@@ -180,4 +165,34 @@ glm::quat GameObject::rotate(float xAngle, float yAngle, float zAngle){
 
     return qCombined;
 }
+
+void GameObject::destroy(){
+    delete collider;
+    collider = NULL;
+}
+
+bool GameObject::checkTotalBoundingBoxHit(const GameObject&other){
+    glm::vec3 endPos = collider->position;
+    glm::vec3 endMinAABB = collider->minAABB;
+    glm::vec3 endMaxAABB = collider->maxAABB;
+    collider->position = position;
+    collider->update(orientation);
+    glm::vec3 firstMinAABB = collider->minAABB;
+    glm::vec3 firstMaxAABB = collider->maxAABB;
+
+    collider->minAABB.x = firstMinAABB.x < endMinAABB.x ? firstMinAABB.x : endMinAABB.x;
+    collider->minAABB.y = firstMinAABB.y < endMinAABB.y ? firstMinAABB.y : endMinAABB.y;
+    collider->minAABB.z = firstMinAABB.z < endMinAABB.z ? firstMinAABB.z : endMinAABB.z;
+
+    collider->maxAABB.x = firstMaxAABB.x > endMaxAABB.x ? firstMaxAABB.x : endMaxAABB.x;
+    collider->maxAABB.y = firstMaxAABB.y > endMaxAABB.y ? firstMaxAABB.y : endMaxAABB.y;
+    collider->maxAABB.z = firstMaxAABB.z > endMaxAABB.z ? firstMaxAABB.z : endMaxAABB.z;
+
+    if(!collider->checkBoundingBoxAlignedAxis(*(other.collider))){
+        collider->position = endPos;
+        return false;
+    }
+    return true;
+}
+
 #endif
