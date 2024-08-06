@@ -4,6 +4,7 @@
 #include "game.h"
 #include "gameObject.h"
 #include "collider.h"
+#include "commonStructs.h"
 
 class ColliderTest : public GameObject{
 
@@ -12,10 +13,10 @@ class ColliderTest : public GameObject{
 
         ColliderTest(){}
 
-        ColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
+        ColliderTest(const Mesh &mesh, const vector<Vertex> &objectVertices, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
         glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)) 
         : GameObject(mesh, objectScale, position, rotation){
-            addCollider(objectVertices, size, DYNAMIC);
+            addCollider(objectVertices, DYNAMIC);
         }
 
         ColliderTest(const ColliderTest& cT) : GameObject(cT){}

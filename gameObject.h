@@ -8,6 +8,7 @@
 
 #include "mesh.h"
 #include "collider.h"
+#include "commonStructs.h"
 
 class GameObject : public Mesh{
     public:
@@ -66,7 +67,7 @@ class GameObject : public Mesh{
 
         bool hit(const GameObject &other, CollisionInfo &collision);
 
-        inline void addCollider(float* objectVertices, int size, ColliderType type = STATIC);
+        inline void addCollider(const vector<Vertex> &objectVertices, ColliderType type = STATIC);
 
         void destroy();
 
@@ -127,8 +128,8 @@ bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
     return false;
 }
 
-inline void GameObject::addCollider(float* objectVertices, int size, ColliderType type){
-    collider = new Collider(objectVertices, size, scale, type, position, up, front, right);
+inline void GameObject::addCollider(const vector<Vertex> &objectVertices, ColliderType type){
+    collider = new Collider(objectVertices, scale, type, position, up, front, right);
 }
 
 glm::quat GameObject::rotate(float xAngle, float yAngle, float zAngle){

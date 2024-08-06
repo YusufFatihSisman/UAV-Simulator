@@ -8,6 +8,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "shader.h"
+#include "commonStructs.h"
 
 enum ColliderType{
     STATIC,
@@ -41,32 +42,32 @@ class Collider{
 
         ColliderType type;
 
-        Collider(float* objectVertices, int size, ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)){ 
+        Collider(const vector<Vertex> &objectVertices, ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)){ 
             this->type = type;
             float minY, maxY, minX, maxX, minZ, maxZ;
 
-            minX = objectVertices[0];
-            maxX = objectVertices[0];
-            minY = objectVertices[1];
-            maxY = objectVertices[1];
-            minZ = objectVertices[2];
-            maxZ = objectVertices[2];
+            minX = objectVertices[0].Position.x;
+            maxX = objectVertices[0].Position.x;
+            minY = objectVertices[0].Position.y;
+            maxY = objectVertices[0].Position.y;
+            minZ = objectVertices[0].Position.z;
+            maxZ = objectVertices[0].Position.z;
 
-            for(int i = 8; i < size; i+=8){
-                if(objectVertices[i] < minX)
-                    minX = objectVertices[i];
-                if(objectVertices[i] > maxX)
-                    maxX = objectVertices[i];
+            for(int i = 0; i < objectVertices.size(); i++){
+                if(objectVertices[i].Position.x < minX)
+                    minX = objectVertices[i].Position.x;
+                if(objectVertices[i].Position.x > maxX)
+                    maxX = objectVertices[i].Position.x;
                 
-                if(objectVertices[i+1] < minY)
-                    minY = objectVertices[i+1];
-                if(objectVertices[i+1] > maxY)
-                    maxY = objectVertices[i+1];
+                if(objectVertices[i].Position.y < minY)
+                    minY = objectVertices[i].Position.y;
+                if(objectVertices[i].Position.y > maxY)
+                    maxY = objectVertices[i].Position.y;
                 
-                if(objectVertices[i+2] < minZ)
-                    minZ = objectVertices[i+2];
-                if(objectVertices[i+2] > maxZ)
-                    maxZ = objectVertices[i+2];
+                if(objectVertices[i].Position.z < minZ)
+                    minZ = objectVertices[i].Position.z;
+                if(objectVertices[i].Position.z > maxZ)
+                    maxZ = objectVertices[i].Position.z;
             }
             scale.x = abs(maxX - minX);
             scale.y = abs(maxY - minY);
@@ -76,12 +77,7 @@ class Collider{
             offset.y = (maxY + minY) / 2;
             offset.z = (maxZ + minZ) / 2;
 
-            //offset.x = (1 - scale.x) / 2;
-            //offset.y = (1 - scale.y) / 2;
-            //offset.z = (1 - scale.z) / 2;
-
             scale *= objectScale;
-            
             
             for(int i = 0; i < 72; i+=3){
                 glm::vec3 vertex = glm::vec3(lineVertices[i], lineVertices[i+1], lineVertices[i+2]);
@@ -101,8 +97,8 @@ class Collider{
             setupCollider();
         }
         
-        Collider(float* objectVertices, int size, glm::vec3 objectScale, ColliderType type, 
-        glm::vec3 position, glm::vec3 up, glm::vec3 front, glm::vec3 right) : Collider(objectVertices, size, type, objectScale){
+        Collider(const vector<Vertex> &objectVertices, glm::vec3 objectScale, ColliderType type, 
+        glm::vec3 position, glm::vec3 up, glm::vec3 front, glm::vec3 right) : Collider(objectVertices, type, objectScale){
             this->position = position;
             this->up = up;
             this->front = front;

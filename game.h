@@ -16,6 +16,7 @@
 #include "uav.h"
 #include "customShader.h"
 #include "colliderTest.h"
+#include "commonStructs.h"
 
 using namespace std;
 
@@ -59,11 +60,11 @@ class Game{
         void update(GLFWwindow* window);
         
         void addShader(ShaderType shaderType, const char* vertexPath, const char* fragmentPath);
-        void addPlayer(const Uav &player, float* objectVertices, int size, ColliderType type = DYNAMIC);
-        void addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC);
-        void addObject(const GameObject &object, float* objectVertices, int size, ColliderType type = STATIC);
-        void addTarget(const GameObject &object, float* objectVertices, int size);
-        void addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
+        void addPlayer(const Uav &player, ColliderType type = DYNAMIC);
+        void addPlayer(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC);
+        void addObject(const GameObject &object, ColliderType type = STATIC);
+        void addTarget(const GameObject &object);
+        void addColliderTest(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
             glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f));
 
     private:
@@ -82,7 +83,7 @@ class Game{
         CustomShader shaders[SHADER_MAX];
         float deltaTime = 0.0f;
         float lastFrame = 0.0f;
-        ColState* colInfos;
+        ColState* colInfos = NULL;
 
         bool destroyRequest = false;
         unsigned int firstTargetIndex = -1;
@@ -136,6 +137,7 @@ void Game::update(GLFWwindow* window){
         camera.Front.z = player.GameObject::front.z;
         camera.Front = glm::normalize(camera.Front);
         camera.Position = player.position - 6.0f * camera.Front;
+        camera.Position.y = player.position.y + 1.0f;
     }else{
         camera.Position = colTest.position - 6.0f * colTest.front;
         camera.Front = colTest.front;
@@ -429,38 +431,35 @@ void Game::checkCollisions(){
     }
 }
 
-void Game::addColliderTest(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){
-    colTest = ColliderTest(mesh, objectVertices, size, position, rotation, type, objectScale);
+void Game::addColliderTest(const Mesh &mesh, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){
+    colTest = ColliderTest(mesh, mesh.vertices, position, rotation, type, objectScale);
 }
 
-void Game::addPlayer(const Uav &player, float* objectVertices, int size, ColliderType type){
+void Game::addPlayer(const Uav &player, ColliderType type){
     this->player = player;
-    this->player.addCollider(objectVertices, size, type);
+    this->player.addCollider(player.vertices, type);
     this->player.collider->update(player.orientation);
 }
 
-void Game::addPlayer(const Mesh &mesh, float* objectVertices, int size, glm::vec3 position, ColliderType type){
+void Game::addPlayer(const Mesh &mesh, glm::vec3 position, ColliderType type){
     player = Uav(mesh, position);
-    player.addCollider(objectVertices, size, type);
+    player.addCollider(player.vertices, type);
     this->player.collider->update(player.orientation);
 }
 
-void Game::addTarget(const GameObject &object, float* objectVertices, int size){
+void Game::addTarget(const GameObject &object){
     if(firstTargetIndex == -1)
         firstTargetIndex = gameObjects.size();
     gameObjects.push_back(object);
-    gameObjects[gameObjects.size()-1].addCollider(objectVertices, size, SPEACIAL);
+    gameObjects[gameObjects.size()-1].addCollider(object.vertices, SPEACIAL);
     gameObjects[gameObjects.size()-1].collider->update(gameObjects[gameObjects.size()-1].orientation);
-    /*targets.push_back(object);
-    targets[targets.size()-1].addCollider(objectVertices, size, SPEACIAL);
-    targets[targets.size()-1].collider->update(targets[targets.size()-1].orientation);*/
 }
 
-void Game::addObject(const GameObject &object, float* objectVertices, int size, ColliderType type){
+void Game::addObject(const GameObject &object, ColliderType type){
     if(firstTargetIndex != -1)
         return;
     gameObjects.push_back(object);
-    gameObjects[gameObjects.size()-1].addCollider(objectVertices, size, type);
+    gameObjects[gameObjects.size()-1].addCollider(object.vertices, type);
     gameObjects[gameObjects.size()-1].collider->update(gameObjects[gameObjects.size()-1].orientation);
 }
 
