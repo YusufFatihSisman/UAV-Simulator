@@ -94,8 +94,8 @@ class Game{
         bool destroyRequest = false;
         unsigned int firstTargetIndex = -1;
 
-        const unsigned int SCR_WIDTH = 800;
-        const unsigned int SCR_HEIGHT = 600;
+        const unsigned int SCR_WIDTH = 1200;
+        const unsigned int SCR_HEIGHT = 900;
 
         glm::vec3 pointLightPositions[4] = {
             glm::vec3( 0.7f,  0.2f,  2.0f),
@@ -162,7 +162,7 @@ void Game::draw(){
     shaders[OBJECT].setVec3("viewPos", camera.Position);
     shaders[OBJECT].setFloat("material.shininess", 32.0f);
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
     glm::mat4 view = camera.GetViewMatrix();
 
     shaders[OBJECT].setMat4("projection", projection);
@@ -210,30 +210,13 @@ void Game::draw(){
         shaders[LIGHT].setMat4("model", model);
         gameObjects[i].draw(shaders[LIGHT]);
     }
-    /*
-    shaders[LIGHT].use();
-    shaders[LIGHT].setVec3("viewPos", camera.Position);
-    shaders[LIGHT].setMat4("projection", projection);
-    shaders[LIGHT].setMat4("view", view);
-
-    for(unsigned int i = 0; i < targets.size(); i++){
-        if(targets[i].isDestroyed)
-            continue;
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, targets[i].position);
-        model = model * targets[i].getRotationMatrix();
-        model = glm::scale(model, targets[i].scale * glm::vec3(1.2f, 1.2f, 2.0f));
-        shaders[LIGHT].setMat4("model", model);
-        targets[i].draw(shaders[LIGHT]);
-    }
-    */
 }
 
 void Game::drawColliders(){
     glDisable(GL_DEPTH_TEST);
     shaders[COLLIDER].use();
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
     glm::mat4 view = camera.GetViewMatrix();
     shaders[COLLIDER].setMat4("projection", projection);
     shaders[COLLIDER].setMat4("view", view);
@@ -261,17 +244,6 @@ void Game::drawColliders(){
         shaders[COLLIDER].setMat4("model", model);            
         gameObjects[i].collider->draw(shaders[COLLIDER]);
     }
-    /*
-    for(unsigned int i = 0; i < targets.size(); i++){
-        if(targets[i].isDestroyed)
-            continue;
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, targets[i].position);
-        model = model * targets[i].getRotationMatrix();
-        shaders[COLLIDER].setMat4("model", model);
-        targets[i].collider->draw(shaders[LIGHT]);
-    }
-    */
 
     glEnable(GL_DEPTH_TEST);
 }
