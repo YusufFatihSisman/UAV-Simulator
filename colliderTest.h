@@ -13,10 +13,10 @@ class ColliderTest : public GameObject{
 
         ColliderTest(){}
 
-        ColliderTest(const Mesh &mesh, const vector<Vertex> &objectVertices, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
+        ColliderTest(char const *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
         glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f)) 
-        : GameObject(mesh, objectScale, position, rotation){
-            addCollider(objectVertices, DYNAMIC);
+        : GameObject(path, objectScale, position, rotation){
+            addCollider(DYNAMIC);
         }
 
         ColliderTest(const ColliderTest& cT) : GameObject(cT){}

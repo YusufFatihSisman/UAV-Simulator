@@ -2,9 +2,13 @@
 #define MESH_H
 
 #include <iostream>
+#include <fstream> 
 #include <vector>
+#include <string> 
+#include <filesystem>
 
 #include "glm/glm.hpp"
+#include "stb_image.h"
 
 #include "shader.h"
 #include "commonStructs.h"
@@ -16,14 +20,20 @@ struct Texture {
     string type;
 };  
 
+unsigned int loadTexture(const char *path);
+
 class Mesh{
     public:
-        // mesh data
         vector<Vertex>       vertices;
         vector<unsigned int> indices;
         vector<Texture>      textures;
 
         Mesh(){}
+
+        Mesh(char const *path){
+            loadData(path);
+            setupMesh();
+        }
 
         Mesh(vector<Vertex> vertices, vector<unsigned int> indices){
             this->vertices = vertices;
@@ -70,6 +80,7 @@ class Mesh{
         unsigned int VAO, VBO, EBO;
 
         void setupMesh();
+        void loadData(char const *path);
 
 };
 
@@ -96,6 +107,60 @@ void Mesh::draw(Shader &shader){
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+}
+
+void Mesh::loadData(char const *path){
+    string modelPath = path;
+    string data = (modelPath + "/data.txt").c_str();
+    string index = (modelPath + "/index.txt").c_str();
+    string diffusePNG = (modelPath + "/diffuse.png").c_str();
+    string diffuseJPG = (modelPath + "/diffuse.jpg").c_str();
+    string specular = (modelPath + "/specular.png").c_str();
+
+    ifstream dataFile(data); 
+    
+    string line; 
+    string val;
+
+    /*if(!filesystem::exists(data) || !filesystem::exists(index))
+        return;*/
+        
+    while (getline(dataFile, line)) { 
+        stringstream ls(line);
+        int index = 0;
+        float arr[8] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+        while(getline(ls, val, ' ')){
+            arr[index++] = std::stof(val);
+        }   
+        Vertex v = {glm::vec3(arr[0], arr[1], arr[2]), glm::vec3(arr[3], arr[4], arr[5]), glm::vec2(arr[6], arr[7])};
+        vertices.push_back(v);
+    } 
+    dataFile.close();
+
+    ifstream indexFile(index);
+    while (getline(indexFile, val, ' ')) { 
+        indices.push_back(stoul(val));
+    } 
+    indexFile.close();
+
+    unsigned int diffuseMap = -1;
+    unsigned int specularMap = -1;
+
+    if(filesystem::exists(diffusePNG))
+        diffuseMap = loadTexture(diffusePNG.c_str());
+    else{
+        if(filesystem::exists(diffuseJPG))
+            diffuseMap = loadTexture(diffuseJPG.c_str());
+    }
+        
+    if(filesystem::exists(specular))
+        specularMap = loadTexture(specular.c_str());
+    
+
+    if(diffuseMap != -1)
+        textures.push_back(Texture{diffuseMap, "diffuse"});
+    if(specularMap != -1)
+        textures.push_back(Texture{specularMap, "specular"});
 }
 
 void Mesh::setupMesh(){
@@ -125,6 +190,41 @@ void Mesh::setupMesh(){
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
     }
     glBindVertexArray(0);
+}
+
+unsigned int loadTexture(char const * path){
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data){
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
 
 #endif

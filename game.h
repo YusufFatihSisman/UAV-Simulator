@@ -60,11 +60,16 @@ class Game{
         void update(GLFWwindow* window);
         
         void addShader(ShaderType shaderType, const char* vertexPath, const char* fragmentPath);
-        void addPlayer(const Uav &player, ColliderType type = DYNAMIC);
-        void addPlayer(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = DYNAMIC);
-        void addObject(const GameObject &object, ColliderType type = STATIC);
-        void addTarget(const GameObject &object);
-        void addColliderTest(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
+        void addPlayer(char const *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), 
+            glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), float m = 1, ColliderType type = DYNAMIC);
+
+        void addObject(char const *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), 
+            glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), ColliderType type = STATIC);
+
+        void addTarget(char const *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), 
+            glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f));
+            
+        void addColliderTest(char const *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
             glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), ColliderType type = STATIC, glm::vec3 objectScale = glm::vec3(1.0f, 1.0f, 1.0f));
 
     private:
@@ -73,6 +78,7 @@ class Game{
 
         void processInput(GLFWwindow *window);
         void checkCollisions();
+        bool validatePath(char const *path);
 
         bool cT = false;
 
@@ -431,35 +437,41 @@ void Game::checkCollisions(){
     }
 }
 
-void Game::addColliderTest(const Mesh &mesh, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){
-    colTest = ColliderTest(mesh, mesh.vertices, position, rotation, type, objectScale);
+void Game::addColliderTest(char const *path, glm::vec3 position, glm::vec3 rotation, ColliderType type, glm::vec3 objectScale){
+    if(!validatePath(path))
+        return;
+    colTest = ColliderTest(path, position, rotation, type, objectScale);
 }
 
-void Game::addPlayer(const Uav &player, ColliderType type){
-    this->player = player;
-    this->player.addCollider(player.vertices, type);
+void Game::addPlayer(char const *path, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, float m, ColliderType type){ 
+    if(!validatePath(path))
+        return;
+    this->player = Uav(path, position, rotation, scale, m);
+    this->player.addCollider(type);
     this->player.collider->update(player.orientation);
 }
 
-void Game::addPlayer(const Mesh &mesh, glm::vec3 position, ColliderType type){
-    player = Uav(mesh, position);
-    player.addCollider(player.vertices, type);
-    this->player.collider->update(player.orientation);
-}
-
-void Game::addTarget(const GameObject &object){
+void Game::addTarget(char const *path, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale){
+    if(!validatePath(path))
+        return;
+    
     if(firstTargetIndex == -1)
         firstTargetIndex = gameObjects.size();
-    gameObjects.push_back(object);
-    gameObjects[gameObjects.size()-1].addCollider(object.vertices, SPEACIAL);
+
+    gameObjects.push_back(GameObject(path, scale, position, rotation));
+    gameObjects[gameObjects.size()-1].addCollider(SPEACIAL);
     gameObjects[gameObjects.size()-1].collider->update(gameObjects[gameObjects.size()-1].orientation);
 }
 
-void Game::addObject(const GameObject &object, ColliderType type){
+void Game::addObject(char const *path, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, ColliderType type){
+    if(!validatePath(path))
+        return;
+
     if(firstTargetIndex != -1)
         return;
-    gameObjects.push_back(object);
-    gameObjects[gameObjects.size()-1].addCollider(object.vertices, type);
+
+    gameObjects.push_back(GameObject(path, scale, position, rotation));
+    gameObjects[gameObjects.size()-1].addCollider(type);
     gameObjects[gameObjects.size()-1].collider->update(gameObjects[gameObjects.size()-1].orientation);
 }
 
@@ -467,6 +479,17 @@ void Game::addShader(ShaderType shaderType, const char* vertexPath, const char* 
     if(shaderType >= SHADER_MAX || shaderType < 0)
         return;
     shaders[shaderType] = CustomShader(vertexPath, fragmentPath);
+}
+
+bool Game::validatePath(char const *path){
+    string modelPath = path;
+    string data = (modelPath + "/data.txt").c_str();
+    string index = (modelPath + "/index.txt").c_str();
+
+    if(!filesystem::exists(data) || !filesystem::exists(index))
+        return false;
+
+    return true;
 }
 
 #endif

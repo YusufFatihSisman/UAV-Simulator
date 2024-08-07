@@ -17,8 +17,8 @@ class Uav : public GameObject, public Rigidbody{
 
         Uav(){}
 
-        Uav(const Mesh &mesh, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), float m = 1
-        ) : GameObject(mesh, scale, position, rotation), Rigidbody(position, m){}
+        Uav(char const *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), float m = 1
+        ) : GameObject(path, scale, position, rotation), Rigidbody(position, m){}
 
         Uav(const Uav& uav) : GameObject(uav), Rigidbody(uav){
             Rigidbody::front = GameObject::front;
@@ -36,19 +36,13 @@ class Uav : public GameObject, public Rigidbody{
         glm::quat bankingTurn(float xAngle);
 
         void printInfo(){
-            //std::cout << "Yaw : " << yaw << "\n";
-            //std::cout << "Pitch : " << pitch << "\n";
-            //std::cout << "Roll : " << roll << "\n";
             std::cout << "Drag: " << getDrag() << "\n";
             std::cout << "Thrust: " << thrustForce << "\n";
             std::cout << "Lift: " << getLift() << "\n";
             std::cout << "Weight: " << getWeight() << "\n";
-            std::cout << "Velocity: " << vVelocity << "\n";
-            std::cout << "Horizontal Velocity: " << hVelocity << "\n";
+            std::cout << "Velocity: " << horizontalVelocity << "\n";
+            std::cout << "Vertical Velocity: " << verticalVelocity << "\n";
             std::cout << "Position: " << GameObject::position.x << " " << GameObject::position.y <<  " " << GameObject::position.z  << "\n";
-            /*std::cout << "Up: " << GameObject::up.x << " " << GameObject::up.y <<  " " << GameObject::up.z  << "\n";
-            std::cout << "Front: " << GameObject::front.x << " " << GameObject::front.y <<  " " << GameObject::front.z  << "\n";
-            std::cout << "Right: " << GameObject::right.x << " " << GameObject::right.y <<  " " << GameObject::right.z  << "\n";*/
         }
 
     private:
@@ -57,11 +51,11 @@ class Uav : public GameObject, public Rigidbody{
         float thrustForce = 0;
 
         inline float getLift(){
-            return (cruiseFlight && pitch == 0) ? getWeight() : liftCoefficient * airDensity * (pow(vVelocity, 2) / 2) * wingArea * glm::sin(glm::radians(pitch));
+            return (cruiseFlight && pitch == 0) ? getWeight() : liftCoefficient * airDensity * (pow(horizontalVelocity, 2) / 2) * wingArea * glm::sin(glm::radians(pitch));
         }
 
         inline float getDrag(){
-            return dragCoefficient * airDensity * (pow(vVelocity, 2) / 2) * referenceArea;
+            return dragCoefficient * airDensity * (pow(horizontalVelocity, 2) / 2) * referenceArea;
         }
 
         float liftCoefficient = 0.01;
@@ -115,7 +109,7 @@ void Uav::processInput(bool right, bool left, bool up, bool down, bool speedUp, 
     }
     
     if(xAngle != 0 || zAngle != 0 || yAngle != 0){
-        glm::quat quaternion = rotate(xAngle, yAngle, zAngle);
+        rotate(xAngle, yAngle, zAngle);
         Rigidbody::front = GameObject::front;
         isMoved = true;
     }
@@ -131,19 +125,19 @@ void Uav::processInput(bool right, bool left, bool up, bool down, bool speedUp, 
         if(thrustForce < inverseForceLimit)
             thrustForce = inverseForceLimit;
 
-        if(vVelocity <= 0)
+        if(horizontalVelocity <= 0)
             thrustForce = 0;
     }
 
     if(cruiseFlight && pitch == 0)
-        hVelocity = 0;
+        verticalVelocity = 0;
 
-    float verticalAcceleration = (sqrt(pow(currentForce.x, 2) + pow(currentForce.z, 2)) / m);
-    float avgVe = vVelocity;
+    float horizontalAcceleration = (sqrt(pow(currentForce.x, 2) + pow(currentForce.z, 2)) / m);
+    float avgVe = horizontalVelocity;
     if(GameObject::front.z * currentForce.z > 0)
-        avgVe += verticalAcceleration * deltaTime;
+        avgVe += horizontalAcceleration * deltaTime;
     else{
-        avgVe -= verticalAcceleration * deltaTime;
+        avgVe -= horizontalAcceleration * deltaTime;
         if(avgVe < 0.5f)
             avgVe = 0;
     }
@@ -169,7 +163,6 @@ void Uav::processInput(bool right, bool left, bool up, bool down, bool speedUp, 
 
     if(position != Rigidbody::position)
         isMoved = true;
-    //isMoved = true;
 
     if(collider == NULL)
         GameObject::position = Rigidbody::position;
@@ -177,10 +170,10 @@ void Uav::processInput(bool right, bool left, bool up, bool down, bool speedUp, 
 
 void Uav::onHit(const CollisionInfo &colInfo){
     if(colInfo.type == GROUND)
-        hVelocity = 0;    
+        verticalVelocity = 0;    
     if(colInfo.type == STATIC){
         thrustForce = 0;
-        vVelocity = 0;
+        horizontalVelocity = 0;
     }  
 }
 

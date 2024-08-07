@@ -30,6 +30,13 @@ class GameObject : public Mesh{
         
         GameObject(){}
 
+        GameObject(char const *path, glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f))
+        : Mesh(path){
+            this->scale = scale;
+            this->position = position;
+            rotate(rotation.x, rotation.y, rotation.z);
+        }
+
         GameObject(const Mesh &mesh, glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f)) 
         : Mesh(mesh.vertices, mesh.indices, mesh.textures){
             this->scale = scale;
@@ -67,7 +74,7 @@ class GameObject : public Mesh{
 
         bool hit(const GameObject &other, CollisionInfo &collision);
 
-        inline void addCollider(const vector<Vertex> &objectVertices, ColliderType type = STATIC);
+        inline void addCollider(ColliderType type = STATIC);
 
         void destroy();
 
@@ -128,8 +135,8 @@ bool GameObject::hit(const GameObject &other, CollisionInfo &collision){
     return false;
 }
 
-inline void GameObject::addCollider(const vector<Vertex> &objectVertices, ColliderType type){
-    collider = new Collider(objectVertices, scale, type, position, up, front, right);
+inline void GameObject::addCollider(ColliderType type){
+    collider = new Collider(vertices, scale, type, position, up, front, right);
 }
 
 glm::quat GameObject::rotate(float xAngle, float yAngle, float zAngle){
